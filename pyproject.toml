@@ -1,0 +1,5 @@
+[project]
+name = "agent-loop-factory"
+version = "0.0.0"
+description = "Local deterministic skeleton for supervised software-factory loops."
+requires-python = ">=3.11"

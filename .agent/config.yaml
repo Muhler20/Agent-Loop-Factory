@@ -1,0 +1,26 @@
+target_repo_path: "."
+worktree_base_path: "../agent-worktrees"
+max_iterations: 3
+max_changed_files: 8
+max_diff_lines: 500
+allowed_commands:
+  - "npm test"
+  - "npm run lint"
+  - "npm run typecheck"
+  - "pytest"
+  - "ruff check ."
+  - "mypy ."
+gates:
+  - "auto"
+human_required_paths:
+  - "auth/"
+  - "billing/"
+  - "payments/"
+  - "migrations/"
+  - "infra/"
+  - ".github/"
+  - "Dockerfile"
+  - "docker-compose.yml"
+output_mode: "draft_pr_only"
+auto_merge: false
+auto_deploy: false
