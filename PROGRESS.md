@@ -2,11 +2,11 @@
 
 ## Current Goal
 
-test task description
+None.
 
 ## Last Run
 
-20260617T182653Z-9d13ea: passed
+None.
 
 ## In Progress
 
@@ -18,7 +18,7 @@ None.
 
 ## Next Action
 
-Review run artifacts and decide the next manual task.
+Choose the first supervised task.
 
 ## Decisions
 

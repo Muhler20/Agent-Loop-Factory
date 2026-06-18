@@ -7,13 +7,13 @@ It is not the target app being modified. It is not autonomous yet. v0 does not c
 ## Run
 
 ```bash
-python scripts/run_agent_loop.py --task "test task description"
+python3 scripts/run_agent_loop.py --task "test task description"
 ```
 
 Dry-run creates the run record and planned artifacts without creating a git worktree or running gates:
 
 ```bash
-python scripts/run_agent_loop.py --task "test task description" --dry-run
+python3 scripts/run_agent_loop.py --task "test task description" --dry-run
 ```
 
 Each run writes:

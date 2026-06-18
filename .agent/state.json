@@ -1,17 +1,4 @@
 {
-  "last_run_id": "20260617T182653Z-9d13ea",
-  "runs": [
-    {
-      "run_id": "20260617T182543Z-d87b2b",
-      "ok": true
-    },
-    {
-      "run_id": "20260617T182624Z-19a63e",
-      "ok": true
-    },
-    {
-      "run_id": "20260617T182653Z-9d13ea",
-      "ok": true
-    }
-  ]
+  "last_run_id": null,
+  "runs": []
 }
