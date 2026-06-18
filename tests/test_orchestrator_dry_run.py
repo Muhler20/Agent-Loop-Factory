@@ -41,6 +41,7 @@ class OrchestratorDryRunTests(unittest.TestCase):
             self.assertTrue((run_dir / "stdout.log").exists())
             self.assertTrue((run_dir / "stderr.log").exists())
             self.assertTrue((run_dir / "diff_summary.md").exists())
+            self.assertFalse((run_dir / "codex_result.json").exists())
             self.assertIn("## Current Goal", (tmp_path / "PROGRESS.md").read_text())
 
 

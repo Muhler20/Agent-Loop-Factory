@@ -10,8 +10,12 @@ allowed_commands:
   - "pytest"
   - "ruff check ."
   - "mypy ."
+  - "python3 -m unittest discover -s tests"
 gates:
-  - "auto"
+  - "python3 -m unittest discover -s tests"
+implementer: "none"
+codex_command: "codex"
+codex_exec_args: []
 human_required_paths:
   - "auth/"
   - "billing/"

@@ -13,6 +13,7 @@ DEFAULT_TARGET = ROOT.parent / "sample-target-repo"
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", type=Path, default=DEFAULT_TARGET)
+    parser.add_argument("--failing", action="store_true")
     args = parser.parse_args()
 
     target = args.path.expanduser().resolve()
@@ -21,7 +22,8 @@ def main() -> int:
 
     (target / "sample_math").mkdir(parents=True, exist_ok=True)
     (target / "tests").mkdir(exist_ok=True)
-    (target / "sample_math" / "__init__.py").write_text("def add(a, b):\n    return a + b\n")
+    body = "return a - b" if args.failing else "return a + b"
+    (target / "sample_math" / "__init__.py").write_text(f"def add(a, b):\n    {body}\n")
     (target / "tests" / "test_sample_math.py").write_text(
         "import unittest\n\n"
         "from sample_math import add\n\n\n"

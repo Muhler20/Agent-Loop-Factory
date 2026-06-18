@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 import secrets
+import subprocess
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .codex_implementer import run_codex_implementer, write_codex_skip
 from .config import load_config
 from .create_worktree import create_worktree
 from .run_gates import run_gates
@@ -13,7 +15,7 @@ from .summarize_diff import write_diff_summary
 from .update_progress import build_progress
 
 
-def run(task: str, repo_root: Path, dry_run: bool = False) -> dict[str, object]:
+def run(task: str, repo_root: Path, dry_run: bool = False, implementer: str | None = None, codex_runner=None) -> dict[str, object]:
     repo_root = repo_root.resolve()
     agent_dir = repo_root / ".agent"
     run_id = _run_id()
@@ -33,15 +35,24 @@ def run(task: str, repo_root: Path, dry_run: bool = False) -> dict[str, object]:
     worktree = create_worktree(target_repo, worktree_base, run_id, dry_run=dry_run)
     gate_cwd = worktree.path if worktree.ok and worktree.path and not dry_run else target_repo
 
-    # TODO: future Codex implementer call
+    selected_implementer = implementer if implementer is not None else config.implementer
+    codex_result = None
+    if selected_implementer == "codex":
+        if dry_run:
+            codex_result = write_codex_skip(run_dir, "dry-run: codex not executed")
+        elif not worktree.ok or not worktree.path:
+            codex_result = write_codex_skip(run_dir, "worktree unavailable: codex not executed")
+        else:
+            codex_result = run_codex_implementer(task, worktree.path, run_dir, config, runner=codex_runner or subprocess.run)
     # TODO: future verifier agent call
     # TODO: future Docker build gate
     # TODO: future Docker Compose deployment check
     gates = run_gates(config, gate_cwd, run_dir, dry_run=dry_run or not worktree.ok)
     diff_summary = write_diff_summary(gate_cwd, run_dir / "diff_summary.md", config.max_diff_lines, dry_run=dry_run or not worktree.ok)
-    ok = worktree.ok and all(bool(gate["ok"]) for gate in gates)
+    implementer_ok = selected_implementer != "codex" or bool(codex_result and codex_result.ok)
+    ok = worktree.ok and implementer_ok and all(bool(gate["ok"]) for gate in gates)
 
-    report = _report(task, run_id, dry_run, config, worktree, gates, diff_summary, ok)
+    report = _report(task, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, diff_summary, ok)
     (run_dir / "run_report.md").write_text(report)
     _update_state(agent_dir / "state.json", run_id, ok)
 
@@ -65,12 +76,20 @@ def _run_id() -> str:
     return f"{stamp}-{secrets.token_hex(3)}"
 
 
-def _report(task: str, run_id: str, dry_run: bool, config, worktree, gates, diff_summary: str, ok: bool) -> str:
+def _report(task: str, run_id: str, dry_run: bool, implementer: str, codex_result, config, worktree, gates, diff_summary: str, ok: bool) -> str:
     warnings = [str(gate["warning"]) for gate in gates if gate.get("warning")]
     if not worktree.ok:
         warnings.append(worktree.message)
+    if codex_result and codex_result.error:
+        warnings.append(codex_result.error)
     warning_text = "\n".join(f"- {warning}" for warning in warnings) or "- None."
     gate_text = "\n".join(f"- {gate['command']}: {'ok' if gate['ok'] else 'not ok'}" for gate in gates) or "- No gates detected."
+    codex_text = "- Not used." if implementer != "codex" else (
+        f"- command: {' '.join(codex_result.command)}\n"
+        f"- returncode: {codex_result.returncode}\n"
+        f"- result: {'ok' if codex_result.ok else 'not ok'}\n"
+        f"- error: {codex_result.error or 'None.'}"
+    )
     return f"""# Run Report
 
 ## Run
@@ -78,6 +97,7 @@ def _report(task: str, run_id: str, dry_run: bool, config, worktree, gates, diff
 - run_id: {run_id}
 - task: {task}
 - dry_run: {dry_run}
+- implementer: {implementer}
 - status: {"passed" if ok else "stopped"}
 
 ## Worktree
@@ -89,6 +109,10 @@ def _report(task: str, run_id: str, dry_run: bool, config, worktree, gates, diff
 ## Gates
 
 {gate_text}
+
+## Codex Implementer
+
+{codex_text}
 
 ## Warnings
 

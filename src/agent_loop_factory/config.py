@@ -18,6 +18,9 @@ class Config:
     max_diff_lines: int = 500
     allowed_commands: list[str] = field(default_factory=lambda: NODE_GATES + PYTHON_GATES)
     gates: list[str] = field(default_factory=lambda: ["auto"])
+    implementer: str = "none"
+    codex_command: str = "codex"
+    codex_exec_args: list[str] = field(default_factory=list)
     human_required_paths: list[str] = field(
         default_factory=lambda: [
             "auth/",
@@ -82,6 +85,8 @@ def _scalar(value: str) -> Any:
         return True
     if value.lower() == "false":
         return False
+    if value == "[]":
+        return []
     if value.isdigit():
         return int(value)
     return value

@@ -18,6 +18,8 @@ class ConfigTests(unittest.TestCase):
             config = load_config(agent / "config.yaml")
             self.assertIsInstance(config, Config)
             self.assertEqual(config.target_repo_path, ".")
+            self.assertEqual(config.implementer, "none")
+            self.assertEqual(config.codex_exec_args, [])
             self.assertFalse(config.auto_merge)
             self.assertEqual(config.gates, ["pytest", "ruff check .", "mypy ."])
 
@@ -26,6 +28,14 @@ class ConfigTests(unittest.TestCase):
             tmp_path = Path(raw)
             (tmp_path / "package.json").write_text("{}\n")
             self.assertEqual(detect_gates(tmp_path), ["npm test", "npm run lint", "npm run typecheck"])
+
+    def test_load_config_parses_empty_codex_args(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            agent = tmp_path / ".agent"
+            agent.mkdir()
+            (agent / "config.yaml").write_text("codex_exec_args: []\n")
+            self.assertEqual(load_config(agent / "config.yaml").codex_exec_args, [])
 
 
 if __name__ == "__main__":
