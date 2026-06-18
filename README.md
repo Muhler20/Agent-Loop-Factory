@@ -26,6 +26,38 @@ Each run writes:
 
 The orchestrator also updates `PROGRESS.md`.
 
+## v0.5 Smoke Test
+
+Create a tiny target repo next to this repo:
+
+```bash
+python3 scripts/create_sample_target_repo.py
+```
+
+Point `.agent/config.yaml` at it and use the stdlib unittest gate:
+
+```yaml
+target_repo_path: "../sample-target-repo"
+worktree_base_path: "../agent-worktrees"
+allowed_commands:
+  - "python3 -m unittest discover -s tests"
+gates:
+  - "python3 -m unittest discover -s tests"
+```
+
+Run the loop without `--dry-run`:
+
+```bash
+python3 scripts/run_agent_loop.py --task "v0.5 smoke test"
+```
+
+Confirm the output mentions a `run_id`, then check:
+
+```bash
+ls ../agent-worktrees
+ls .agent/runs/<run_id>/{run_report.md,gate_results.json,stdout.log,stderr.log,diff_summary.md}
+```
+
 ## Config
 
 Edit `.agent/config.yaml` to point at a future target repo:
@@ -39,6 +71,8 @@ Default gates are detected from the target repo:
 
 - Node/TypeScript: `npm test`, `npm run lint`, `npm run typecheck`
 - Python: `pytest`, `ruff check .`, `mypy .`
+
+For a stdlib-only Python repo, set `allowed_commands` and `gates` to `python3 -m unittest discover -s tests`.
 
 Unavailable commands are warnings in the run report, not crashes.
 
