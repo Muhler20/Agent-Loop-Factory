@@ -2,7 +2,7 @@
 
 `agent-loop-factory` is a local control loop for supervised software-factory runs. It is the orchestrator that will eventually run agentic implementation loops against target repositories.
 
-It is not the target app being modified. v1 can optionally call Codex once inside a created worktree, then runs gates and stops. By default it does not call LLMs, push branches, merge code, deploy, open PRs, or listen for webhooks.
+It is not the target app being modified. v2 can optionally call Codex once inside a created worktree, runs gates, runs a deterministic verifier, then stops. By default it does not call LLMs, push branches, merge code, deploy, open PRs, or listen for webhooks.
 
 ## v1
 
@@ -12,6 +12,22 @@ v1 adds one optional implementer worker:
 - `--implementer codex` runs `codex exec` once inside the created worktree.
 - Gates run after the implementer attempt.
 - Artifacts record the prompt, Codex output, gate results, diff summary, and run report.
+
+## v2
+
+v2 adds a deterministic verifier after gates. It does not use an LLM reviewer.
+
+The verifier checks:
+
+- gate results
+- changed file count against `max_changed_files`
+- diff line count against `max_diff_lines`
+- touched `human_required_paths`
+- simple test weakening signals, including deleted files under `tests/`, removed assertions in test files, and added skip markers
+
+Each run writes `.agent/runs/<run_id>/verifier_result.json` with the verifier decision, reasons, warnings, changed files, diff size, human-required paths touched, and whether tests appear weakened or deleted.
+
+The final run status is passed only when gates and the verifier both pass. Future versions may add optional LLM review, but v2 deliberately keeps verification deterministic.
 
 ## Run
 
@@ -41,6 +57,7 @@ Each run writes:
 
 - `.agent/runs/<run_id>/run_report.md`
 - `.agent/runs/<run_id>/gate_results.json`
+- `.agent/runs/<run_id>/verifier_result.json`
 - `.agent/runs/<run_id>/stdout.log`
 - `.agent/runs/<run_id>/stderr.log`
 - `.agent/runs/<run_id>/diff_summary.md`
@@ -54,7 +71,7 @@ When `--implementer codex` is used, the run also writes:
 
 The orchestrator also updates `PROGRESS.md`.
 
-## v1 Smoke Test
+## v2 Smoke Test
 
 Create a tiny target repo with one intentionally failing unittest next to this repo:
 
@@ -83,10 +100,10 @@ Confirm the output mentions a `run_id`, then check:
 
 ```bash
 ls ../agent-worktrees
-ls .agent/runs/<run_id>/{run_report.md,gate_results.json,stdout.log,stderr.log,diff_summary.md,codex_prompt.md,codex_stdout.log,codex_stderr.log,codex_result.json}
+ls .agent/runs/<run_id>/{run_report.md,gate_results.json,verifier_result.json,stdout.log,stderr.log,diff_summary.md,codex_prompt.md,codex_stdout.log,codex_stderr.log,codex_result.json}
 ```
 
-Gates run after Codex. If Codex is unavailable or fails, `codex_result.json` and `run_report.md` include the error and the loop stops without pushing, merging, deploying, or opening a PR.
+Gates run after Codex, then the deterministic verifier runs. If Codex is unavailable, gates fail, or the verifier fails, the JSON artifacts and `run_report.md` include the reason and the loop stops without pushing, merging, deploying, or opening a PR.
 
 ## Config
 
@@ -111,7 +128,7 @@ Unavailable commands are warnings in the run report, not crashes.
 
 ## Safety Boundaries
 
-v1 keeps hard limits in config and repeats them in the Codex prompt:
+v2 keeps hard limits in config, enforces them in the verifier, and repeats them in the Codex prompt:
 
 - `max_iterations`
 - `max_changed_files`
@@ -122,7 +139,7 @@ v1 keeps hard limits in config and repeats them in the Codex prompt:
 - `auto_merge: false`
 - `auto_deploy: false`
 
-Codex is told to make the smallest change, avoid weakening tests, avoid sensitive paths without approval, stop after editing files, and not claim success. Gates decide success.
+Codex is told to make the smallest change, avoid weakening tests, avoid sensitive paths without approval, stop after editing files, and not claim success. Gates plus the deterministic verifier decide success.
 
 ## Troubleshooting
 
@@ -136,8 +153,5 @@ Set `codex_command` if your executable has a different name or path.
 
 ## Roadmap
 
-- v2: add a verifier agent
-- v3: add Docker build and Docker Compose gates
-- v4: add draft PR creation only
-- v5: add GitHub Actions or webhook triggers
-- v6: add parallel planner, triage, implementer, and verifier agents
+- v2: deterministic verifier only; no LLM reviewer, Docker, GitHub Actions, draft PRs, push, merge, or deploy.
+- Later: optional LLM review may be added after the deterministic checks exist.

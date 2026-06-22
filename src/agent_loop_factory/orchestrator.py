@@ -13,6 +13,7 @@ from .create_worktree import create_worktree
 from .run_gates import run_gates
 from .summarize_diff import write_diff_summary
 from .update_progress import build_progress
+from .verifier import run_verifier
 
 
 def run(task: str, repo_root: Path, dry_run: bool = False, implementer: str | None = None, codex_runner=None) -> dict[str, object]:
@@ -48,11 +49,13 @@ def run(task: str, repo_root: Path, dry_run: bool = False, implementer: str | No
     # TODO: future Docker build gate
     # TODO: future Docker Compose deployment check
     gates = run_gates(config, gate_cwd, run_dir, dry_run=dry_run or not worktree.ok)
+    verifier_result = run_verifier(config, worktree.path if worktree.ok and not dry_run else None, run_dir, gates)
     diff_summary = write_diff_summary(gate_cwd, run_dir / "diff_summary.md", config.max_diff_lines, dry_run=dry_run or not worktree.ok)
     implementer_ok = selected_implementer != "codex" or bool(codex_result and codex_result.ok)
-    ok = worktree.ok and implementer_ok and all(bool(gate["ok"]) for gate in gates)
+    gates_ok = all(bool(gate["ok"]) for gate in gates)
+    ok = worktree.ok and implementer_ok and gates_ok and bool(verifier_result["ok"])
 
-    report = _report(task, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, diff_summary, ok)
+    report = _report(task, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, verifier_result, diff_summary, ok)
     (run_dir / "run_report.md").write_text(report)
     _update_state(agent_dir / "state.json", run_id, ok)
 
@@ -61,7 +64,7 @@ def run(task: str, repo_root: Path, dry_run: bool = False, implementer: str | No
         build_progress(
             run_id=run_id,
             task=task,
-            status="passed" if ok else "stopped",
+            status="passed" if ok else "failed",
             next_action="Review run artifacts and decide the next manual task.",
             blocker=blocker,
         )
@@ -76,7 +79,7 @@ def _run_id() -> str:
     return f"{stamp}-{secrets.token_hex(3)}"
 
 
-def _report(task: str, run_id: str, dry_run: bool, implementer: str, codex_result, config, worktree, gates, diff_summary: str, ok: bool) -> str:
+def _report(task: str, run_id: str, dry_run: bool, implementer: str, codex_result, config, worktree, gates, verifier_result, diff_summary: str, ok: bool) -> str:
     warnings = [str(gate["warning"]) for gate in gates if gate.get("warning")]
     if not worktree.ok:
         warnings.append(worktree.message)
@@ -84,6 +87,9 @@ def _report(task: str, run_id: str, dry_run: bool, implementer: str, codex_resul
         warnings.append(codex_result.error)
     warning_text = "\n".join(f"- {warning}" for warning in warnings) or "- None."
     gate_text = "\n".join(f"- {gate['command']}: {'ok' if gate['ok'] else 'not ok'}" for gate in gates) or "- No gates detected."
+    verifier_reasons = "\n".join(f"- {reason}" for reason in verifier_result["reasons"]) or "- None."
+    verifier_warnings = "\n".join(f"- {warning}" for warning in verifier_result["warnings"]) or "- None."
+    verifier_human = "\n".join(f"- {path}" for path in verifier_result["human_required_touched"]) or "- None."
     codex_text = "- Not used." if implementer != "codex" else (
         f"- command: {' '.join(codex_result.command)}\n"
         f"- returncode: {codex_result.returncode}\n"
@@ -98,7 +104,7 @@ def _report(task: str, run_id: str, dry_run: bool, implementer: str, codex_resul
 - task: {task}
 - dry_run: {dry_run}
 - implementer: {implementer}
-- status: {"passed" if ok else "stopped"}
+- status: {"passed" if ok else "failed"}
 
 ## Worktree
 
@@ -109,6 +115,22 @@ def _report(task: str, run_id: str, dry_run: bool, implementer: str, codex_resul
 ## Gates
 
 {gate_text}
+
+## Verifier
+
+- ok: {verifier_result["ok"]}
+- changed_file_count: {verifier_result["changed_file_count"]}
+- diff_line_count: {verifier_result["diff_line_count"]}
+- tests_weakened_or_deleted: {verifier_result["tests_weakened_or_deleted"]}
+
+Reasons:
+{verifier_reasons}
+
+Warnings:
+{verifier_warnings}
+
+Human-required paths touched:
+{verifier_human}
 
 ## Codex Implementer
 

@@ -38,6 +38,7 @@ class OrchestratorDryRunTests(unittest.TestCase):
             self.assertTrue(result["dry_run"])
             self.assertTrue((run_dir / "run_report.md").exists())
             self.assertTrue((run_dir / "gate_results.json").exists())
+            self.assertTrue((run_dir / "verifier_result.json").exists())
             self.assertTrue((run_dir / "stdout.log").exists())
             self.assertTrue((run_dir / "stderr.log").exists())
             self.assertTrue((run_dir / "diff_summary.md").exists())
