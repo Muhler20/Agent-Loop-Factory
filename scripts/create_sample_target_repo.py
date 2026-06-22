@@ -22,6 +22,8 @@ def main() -> int:
 
     (target / "sample_math").mkdir(parents=True, exist_ok=True)
     (target / "tests").mkdir(exist_ok=True)
+    (target / ".gitignore").write_text("__pycache__/\n*.py[cod]\n")
+    (target / "CONSTRAINTS.md").write_text("Keep the sample change small and keep tests meaningful.\n")
     body = "return a - b" if args.failing else "return a + b"
     (target / "sample_math" / "__init__.py").write_text(f"def add(a, b):\n    {body}\n")
     (target / "tests" / "test_sample_math.py").write_text(

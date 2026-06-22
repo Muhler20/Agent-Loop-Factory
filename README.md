@@ -82,7 +82,7 @@ When `--implementer codex` is used, the run also writes:
 
 The orchestrator also updates `PROGRESS.md`.
 
-## v2 Smoke Test
+## v2.5 Smoke Test
 
 Create a tiny target repo with one intentionally failing unittest next to this repo:
 
@@ -112,6 +112,8 @@ Confirm the output mentions a `run_id`, then check:
 ```bash
 ls ../agent-worktrees
 ls .agent/runs/<run_id>/{run_report.md,gate_results.json,verifier_result.json,stdout.log,stderr.log,diff_summary.md,codex_prompt.md,codex_stdout.log,codex_stderr.log,codex_result.json}
+grep -F "# CONSTRAINTS.md" .agent/runs/<run_id>/codex_prompt.md
+grep -F "Keep the sample change small" .agent/runs/<run_id>/codex_prompt.md
 ```
 
 Gates run after Codex, then the deterministic verifier runs. If Codex is unavailable, gates fail, or the verifier fails, the JSON artifacts and `run_report.md` include the reason and the loop stops without pushing, merging, deploying, or opening a PR.

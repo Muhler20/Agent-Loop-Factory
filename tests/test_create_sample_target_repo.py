@@ -21,6 +21,8 @@ class CreateSampleTargetRepoTests(unittest.TestCase):
             )
 
             subprocess.run(["git", "rev-parse", "--verify", "HEAD"], cwd=target, check=True, capture_output=True)
+            self.assertEqual((target / ".gitignore").read_text(), "__pycache__/\n*.py[cod]\n")
+            self.assertIn("Keep the sample change small", (target / "CONSTRAINTS.md").read_text())
             subprocess.run(
                 [sys.executable, "-m", "unittest", "discover", "-s", "tests"],
                 cwd=target,
