@@ -2,7 +2,7 @@
 
 `agent-loop-factory` is a local control loop for supervised software-factory runs. It is the orchestrator that will eventually run agentic implementation loops against target repositories.
 
-It is not the target app being modified. v2 can optionally call Codex once inside a created worktree, runs gates, runs a deterministic verifier, then stops. By default it does not call LLMs, push branches, merge code, deploy, open PRs, or listen for webhooks.
+It is not the target app being modified. v2.5 can optionally call Codex once inside a created worktree, runs gates, runs a deterministic verifier, then stops. It is still manual and local. By default it does not call LLMs, push branches, merge code, deploy, open PRs, or listen for webhooks.
 
 ## v1
 
@@ -27,7 +27,18 @@ The verifier checks:
 
 Each run writes `.agent/runs/<run_id>/verifier_result.json` with the verifier decision, reasons, warnings, changed files, diff size, human-required paths touched, and whether tests appear weakened or deleted.
 
-The final run status is passed only when gates and the verifier both pass. Future versions may add optional LLM review, but v2 deliberately keeps verification deterministic.
+The final run status is passed only when gates and the verifier both pass. v2 keeps verification deterministic.
+
+## v2.5
+
+v2.5 adds lightweight repo guidance, not a platform:
+
+- `CONSTRAINTS.md` stores stable project constraints future runs should read.
+- `docs/LOOP_SELECTION.md` explains which tasks should become loops.
+- `docs/TASK_SPEC_TEMPLATE.md` is a small template for future task specs.
+- Codex implementer prompts include `AGENTS.md` and `CONSTRAINTS.md` when those files exist.
+
+This is not a scheduler, PR bot, swarm, autonomous deployment system, Docker setup, GitHub Actions workflow, MCP connector, skills system, or LLM verifier.
 
 ## Run
 
@@ -128,7 +139,7 @@ Unavailable commands are warnings in the run report, not crashes.
 
 ## Safety Boundaries
 
-v2 keeps hard limits in config, enforces them in the verifier, and repeats them in the Codex prompt:
+v2.5 keeps hard limits in config, enforces them in the verifier, and repeats them in the Codex prompt:
 
 - `max_iterations`
 - `max_changed_files`
@@ -139,7 +150,7 @@ v2 keeps hard limits in config, enforces them in the verifier, and repeats them 
 - `auto_merge: false`
 - `auto_deploy: false`
 
-Codex is told to make the smallest change, avoid weakening tests, avoid sensitive paths without approval, stop after editing files, and not claim success. Gates plus the deterministic verifier decide success.
+Codex is told to make the smallest change, avoid weakening tests, avoid sensitive paths without approval, stop after editing files, and not claim success. The prompt also includes `AGENTS.md` and `CONSTRAINTS.md` when present. Gates plus the deterministic verifier decide success.
 
 ## Troubleshooting
 
@@ -153,5 +164,4 @@ Set `codex_command` if your executable has a different name or path.
 
 ## Roadmap
 
-- v2: deterministic verifier only; no LLM reviewer, Docker, GitHub Actions, draft PRs, push, merge, or deploy.
-- Later: optional LLM review may be added after the deterministic checks exist.
+- v2.5: manual and local; no scheduler, PR bot, swarm, LLM verifier, Docker, GitHub Actions, draft PRs, push, merge, deploy, publish, MCP, or connectors.

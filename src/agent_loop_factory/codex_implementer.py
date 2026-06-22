@@ -62,16 +62,20 @@ def write_codex_skip(run_dir: Path, reason: str) -> CodexResult:
 
 
 def build_prompt(task: str, worktree_path: Path, config: Config) -> str:
-    agents = worktree_path / "AGENTS.md"
-    agents_text = agents.read_text() if agents.exists() else "No AGENTS.md found."
+    agents_text = _optional_context(worktree_path, "AGENTS.md")
+    constraints_text = _optional_context(worktree_path, "CONSTRAINTS.md")
     sensitive_paths = "\n".join(f"- {path}" for path in config.human_required_paths)
     return f"""# Task
 
 {task}
 
-# Repository Rules
+# AGENTS.md
 
 {agents_text}
+
+# CONSTRAINTS.md
+
+{constraints_text}
 
 # Safety Limits
 
@@ -83,6 +87,11 @@ def build_prompt(task: str, worktree_path: Path, config: Config) -> str:
 - Stop after editing files.
 - Do not claim success; gates decide success.
 """
+
+
+def _optional_context(worktree_path: Path, filename: str) -> str:
+    path = worktree_path / filename
+    return path.read_text() if path.exists() else f"No {filename} found."
 
 
 def _write_result(run_dir: Path, result: CodexResult) -> None:
