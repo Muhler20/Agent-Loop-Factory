@@ -21,13 +21,13 @@ class CodexResult:
 
 
 def run_codex_implementer(
-    task: str,
+    task_spec: str,
     worktree_path: Path,
     run_dir: Path,
     config: Config,
     runner: Runner = subprocess.run,
 ) -> CodexResult:
-    prompt = build_prompt(task, worktree_path, config)
+    prompt = build_prompt(task_spec, worktree_path, config)
     (run_dir / "codex_prompt.md").write_text(prompt)
 
     command = [config.codex_command, "exec", "--cd", str(worktree_path), "--sandbox", "workspace-write", *config.codex_exec_args, "-"]
@@ -61,13 +61,13 @@ def write_codex_skip(run_dir: Path, reason: str) -> CodexResult:
     return result
 
 
-def build_prompt(task: str, worktree_path: Path, config: Config) -> str:
+def build_prompt(task_spec: str, worktree_path: Path, config: Config) -> str:
     agents_text = _optional_context(worktree_path, "AGENTS.md")
     constraints_text = _optional_context(worktree_path, "CONSTRAINTS.md")
     sensitive_paths = "\n".join(f"- {path}" for path in config.human_required_paths)
-    return f"""# Task
+    return f"""# Task Spec
 
-{task}
+{task_spec}
 
 # AGENTS.md
 

@@ -40,6 +40,12 @@ v2.5 adds lightweight repo guidance, not a platform:
 
 This is not a scheduler, PR bot, swarm, autonomous deployment system, Docker setup, GitHub Actions workflow, MCP connector, skills system, or LLM verifier.
 
+## v3
+
+v3 adds structured task specs: written Markdown job orders that can be passed with `--task-file`. Inline `--task` still works, and every run writes the task order to `.agent/runs/<run_id>/task_spec.md`.
+
+Use `docs/TASK_SPEC_TEMPLATE.md` for new specs. A sample is available at `tasks/fix-sample-add.md`.
+
 ## Run
 
 ```bash
@@ -58,6 +64,12 @@ Run with Codex:
 python3 scripts/run_agent_loop.py --task "fix the failing test" --implementer codex
 ```
 
+Run from a task spec:
+
+```bash
+python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --implementer codex
+```
+
 Dry-run creates the run record and planned artifacts without creating a git worktree or running gates:
 
 ```bash
@@ -72,6 +84,7 @@ Each run writes:
 - `.agent/runs/<run_id>/stdout.log`
 - `.agent/runs/<run_id>/stderr.log`
 - `.agent/runs/<run_id>/diff_summary.md`
+- `.agent/runs/<run_id>/task_spec.md`
 
 When `--implementer codex` is used, the run also writes:
 
@@ -105,6 +118,12 @@ Run the loop without `--dry-run`:
 
 ```bash
 python3 scripts/run_agent_loop.py --task "Fix the failing sample_math add test." --implementer codex
+```
+
+Or use the sample written job order:
+
+```bash
+python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --implementer codex
 ```
 
 Confirm the output mentions a `run_id`, then check:
@@ -141,7 +160,7 @@ Unavailable commands are warnings in the run report, not crashes.
 
 ## Safety Boundaries
 
-v2.5 keeps hard limits in config, enforces them in the verifier, and repeats them in the Codex prompt:
+v3 keeps hard limits in config, enforces them in the verifier, and repeats them in the Codex prompt:
 
 - `max_iterations`
 - `max_changed_files`
@@ -152,7 +171,7 @@ v2.5 keeps hard limits in config, enforces them in the verifier, and repeats the
 - `auto_merge: false`
 - `auto_deploy: false`
 
-Codex is told to make the smallest change, avoid weakening tests, avoid sensitive paths without approval, stop after editing files, and not claim success. The prompt also includes `AGENTS.md` and `CONSTRAINTS.md` when present. Gates plus the deterministic verifier decide success.
+Codex is told to make the smallest change, avoid weakening tests, avoid sensitive paths without approval, stop after editing files, and not claim success. The prompt also includes the task spec, plus `AGENTS.md` and `CONSTRAINTS.md` when present. Gates plus the deterministic verifier decide success.
 
 ## Troubleshooting
 
@@ -166,4 +185,4 @@ Set `codex_command` if your executable has a different name or path.
 
 ## Roadmap
 
-- v2.5: manual and local; no scheduler, PR bot, swarm, LLM verifier, Docker, GitHub Actions, draft PRs, push, merge, deploy, publish, MCP, or connectors.
+- v3: manual and local; no scheduler, PR bot, swarm, LLM verifier, Docker, GitHub Actions, draft PRs, push, merge, deploy, publish, MCP, or connectors.

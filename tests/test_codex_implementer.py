@@ -40,6 +40,7 @@ class CodexImplementerTests(unittest.TestCase):
                 ["codex", "exec", "--cd", str(worktree), "--sandbox", "workspace-write", "--ephemeral", "-"],
             )
             self.assertIn("fix the tiny failure", (run_dir / "codex_prompt.md").read_text())
+            self.assertIn("# Task Spec", (run_dir / "codex_prompt.md").read_text())
             self.assertIn("Never weaken tests.", (run_dir / "codex_prompt.md").read_text())
             self.assertIn("Keep diffs small.", (run_dir / "codex_prompt.md").read_text())
             self.assertIn("Never weaken tests.", calls[0][1]["input"])
@@ -55,6 +56,7 @@ class CodexImplementerTests(unittest.TestCase):
 
             prompt = build_prompt("do the task", worktree, Config())
 
+            self.assertIn("# Task Spec\n\ndo the task", prompt)
             self.assertIn("# AGENTS.md\n\nAgent rule.", prompt)
             self.assertIn("# CONSTRAINTS.md\n\nProject constraint.", prompt)
 
