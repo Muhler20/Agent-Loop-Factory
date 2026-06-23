@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 import sys
+import json
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -56,17 +57,22 @@ class OrchestratorDryRunTests(unittest.TestCase):
             tmp_path = Path(raw)
             write_agent_config(tmp_path)
             task_file = tmp_path / "task.md"
-            body = "# Fix sample add\n\n## Goal\n\nFix add.\n"
+            body = "# Fix sample add\n\n## Goal\n\nFix add.\n\n## Allowed files\n\n- `sample_math/__init__.py`\n\n## Forbidden files\n\n- `tests/`\n"
             task_file.write_text(body)
 
             result = run(body, tmp_path, dry_run=True, task_file_path=str(task_file))
             run_dir = Path(result["run_dir"])
             report = (run_dir / "run_report.md").read_text()
+            verifier = json.loads((run_dir / "verifier_result.json").read_text())
 
             self.assertEqual((run_dir / "task_spec.md").read_text(), body)
             self.assertIn("task_title: Fix sample add", report)
             self.assertIn("task_source: file", report)
             self.assertIn(f"task_file_path: {task_file}", report)
+            self.assertIn("Task allowed files:\n- sample_math/__init__.py", report)
+            self.assertIn("Task forbidden files:\n- tests/", report)
+            self.assertEqual(verifier["task_allowed_files"], ["sample_math/__init__.py"])
+            self.assertEqual(verifier["task_forbidden_files"], ["tests/"])
 
 
 if __name__ == "__main__":

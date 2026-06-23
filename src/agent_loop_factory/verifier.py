@@ -6,6 +6,7 @@ import subprocess
 from pathlib import Path
 
 from .config import Config
+from .task_spec import TaskSpec
 
 
 SKIP_MARKERS = ("@unittest.skip", "pytest.mark.skip", "skipTest")
@@ -25,7 +26,15 @@ RESERVED_ARTIFACT_FILENAMES = {
 }
 
 
-def run_verifier(config: Config, worktree_path: Path | None, run_dir: Path, gates: list[dict[str, object]]) -> dict[str, object]:
+def run_verifier(
+    config: Config,
+    worktree_path: Path | None,
+    run_dir: Path,
+    gates: list[dict[str, object]],
+    task_spec: TaskSpec | None = None,
+) -> dict[str, object]:
+    allowed_files = task_spec.allowed_files if task_spec else []
+    forbidden_files = task_spec.forbidden_files if task_spec else []
     result: dict[str, object] = {
         "ok": True,
         "reasons": [],
@@ -36,6 +45,10 @@ def run_verifier(config: Config, worktree_path: Path | None, run_dir: Path, gate
         "human_required_touched": [],
         "reserved_artifacts_touched": [],
         "tests_weakened_or_deleted": False,
+        "task_allowed_files": allowed_files,
+        "task_forbidden_files": forbidden_files,
+        "task_allowed_violations": [],
+        "task_forbidden_touched": [],
     }
     reasons = result["reasons"]
 
@@ -62,6 +75,8 @@ def run_verifier(config: Config, worktree_path: Path | None, run_dir: Path, gate
     result["human_required_touched"] = [path for path in changed_files if _human_required(path, config.human_required_paths)]
     result["reserved_artifacts_touched"] = [path for path in changed_files if Path(path).name in RESERVED_ARTIFACT_FILENAMES]
     result["tests_weakened_or_deleted"] = _tests_weakened(name_status, diff)
+    result["task_allowed_violations"] = [path for path in changed_files if allowed_files and not _matches_any(path, allowed_files)]
+    result["task_forbidden_touched"] = [path for path in changed_files if _matches_any(path, forbidden_files)]
 
     if result["changed_file_count"] > config.max_changed_files:
         reasons.append(f"changed_file_count exceeds max_changed_files: {result['changed_file_count']} > {config.max_changed_files}")
@@ -71,6 +86,10 @@ def run_verifier(config: Config, worktree_path: Path | None, run_dir: Path, gate
         reasons.append("human-required paths touched")
     for path in result["reserved_artifacts_touched"]:
         reasons.append(f"reserved run artifact file changed in target repo: {path}")
+    for path in result["task_allowed_violations"]:
+        reasons.append(f"changed file outside task allowed files: {path}")
+    for path in result["task_forbidden_touched"]:
+        reasons.append(f"task forbidden file touched: {path}")
     if result["tests_weakened_or_deleted"]:
         reasons.append("tests appear weakened or deleted")
     return _write(run_dir, result)
@@ -116,6 +135,15 @@ def _run_dir_prefix(worktree_path: Path, run_dir: Path) -> str | None:
 
 def _human_required(path: str, patterns: list[str]) -> bool:
     return any(path.startswith(pattern) if pattern.endswith("/") else fnmatch.fnmatch(path, pattern) or path == pattern for pattern in patterns)
+
+
+def _matches_any(path: str, entries: list[str]) -> bool:
+    normalized = _normalize(path)
+    return any(normalized.startswith(entry) if entry.endswith("/") else normalized == entry for entry in map(_normalize, entries))
+
+
+def _normalize(path: str) -> str:
+    return path.replace("\\", "/")
 
 
 def _is_test(path: str) -> bool:

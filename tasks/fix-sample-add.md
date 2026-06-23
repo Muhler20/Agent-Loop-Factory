@@ -21,8 +21,6 @@ Fix the failing `sample_math.add` test.
 ## Forbidden files
 
 - `tests/`
-- Dependency files
-- Config files
 
 ## Gates
 

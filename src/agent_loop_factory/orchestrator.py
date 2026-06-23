@@ -59,7 +59,7 @@ def run(
     # TODO: future Docker build gate
     # TODO: future Docker Compose deployment check
     gates = run_gates(config, gate_cwd, run_dir, dry_run=dry_run or not worktree.ok)
-    verifier_result = run_verifier(config, worktree.path if worktree.ok and not dry_run else None, run_dir, gates)
+    verifier_result = run_verifier(config, worktree.path if worktree.ok and not dry_run else None, run_dir, gates, task_spec)
     diff_summary = write_diff_summary(gate_cwd, run_dir / "diff_summary.md", config.max_diff_lines, dry_run=dry_run or not worktree.ok)
     implementer_ok = selected_implementer != "codex" or bool(codex_result and codex_result.ok)
     gates_ok = all(bool(gate["ok"]) for gate in gates)
@@ -100,6 +100,10 @@ def _report(task_spec: TaskSpec, run_id: str, dry_run: bool, implementer: str, c
     verifier_reasons = "\n".join(f"- {reason}" for reason in verifier_result["reasons"]) or "- None."
     verifier_warnings = "\n".join(f"- {warning}" for warning in verifier_result["warnings"]) or "- None."
     verifier_human = "\n".join(f"- {path}" for path in verifier_result["human_required_touched"]) or "- None."
+    verifier_allowed = _list(verifier_result["task_allowed_files"])
+    verifier_forbidden = _list(verifier_result["task_forbidden_files"])
+    verifier_allowed_violations = _list(verifier_result["task_allowed_violations"])
+    verifier_forbidden_touched = _list(verifier_result["task_forbidden_touched"])
     codex_text = "- Not used." if implementer != "codex" else (
         f"- command: {' '.join(codex_result.command)}\n"
         f"- returncode: {codex_result.returncode}\n"
@@ -149,6 +153,18 @@ Warnings:
 Human-required paths touched:
 {verifier_human}
 
+Task allowed files:
+{verifier_allowed}
+
+Task forbidden files:
+{verifier_forbidden}
+
+Task allowed violations:
+{verifier_allowed_violations}
+
+Task forbidden touched:
+{verifier_forbidden_touched}
+
 ## Codex Implementer
 
 {codex_text}
@@ -169,6 +185,11 @@ Human-required paths touched:
 {diff_summary}
 ```
 """
+
+
+def _list(values: object) -> str:
+    items = values if isinstance(values, list) else []
+    return "\n".join(f"- {value}" for value in items) or "- None."
 
 
 def _update_state(path: Path, run_id: str, ok: bool) -> None:

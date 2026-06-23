@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from agent_loop_factory.config import Config
+from agent_loop_factory.task_spec import TaskSpec
 from agent_loop_factory.verifier import run_verifier
 
 
@@ -96,16 +97,60 @@ class VerifierTests(unittest.TestCase):
             self.assertFalse(result["ok"])
             self.assertTrue(result["tests_weakened_or_deleted"])
 
+    def test_passes_when_changed_file_is_inside_allowed_files(self) -> None:
+        with repo({"sample_math/__init__.py": "def add(a, b):\n    return 0\n"}) as tmp:
+            (tmp / "sample_math" / "__init__.py").write_text("def add(a, b):\n    return a + b\n")
+            result = verify(tmp, task_spec=task_spec(allowed_files=["sample_math/__init__.py"]))
+            self.assertTrue(result["ok"], result["reasons"])
+            self.assertEqual(result["task_allowed_violations"], [])
+
+    def test_fails_when_changed_file_is_outside_allowed_files(self) -> None:
+        with repo({"sample_math/__init__.py": "def add(a, b):\n    return 0\n", "tests/test_sample_math.py": "pass\n"}) as tmp:
+            (tmp / "tests" / "test_sample_math.py").write_text("def test_add():\n    assert True\n")
+            result = verify(tmp, task_spec=task_spec(allowed_files=["sample_math/__init__.py"]))
+            self.assertFalse(result["ok"])
+            self.assertEqual(result["task_allowed_violations"], ["tests/test_sample_math.py"])
+            self.assertIn("changed file outside task allowed files: tests/test_sample_math.py", result["reasons"])
+
+    def test_fails_when_changed_file_is_under_forbidden_directory(self) -> None:
+        with repo({"tests/test_sample_math.py": "pass\n"}) as tmp:
+            (tmp / "tests" / "test_sample_math.py").write_text("def test_add():\n    assert True\n")
+            result = verify(tmp, task_spec=task_spec(forbidden_files=["tests/"]))
+            self.assertFalse(result["ok"])
+            self.assertEqual(result["task_forbidden_touched"], ["tests/test_sample_math.py"])
+            self.assertIn("task forbidden file touched: tests/test_sample_math.py", result["reasons"])
+
+    def test_fails_when_changed_file_exactly_matches_forbidden_file(self) -> None:
+        with repo({"pyproject.toml": "[project]\nname='x'\n"}) as tmp:
+            (tmp / "pyproject.toml").write_text("[project]\nname='y'\n")
+            result = verify(tmp, task_spec=task_spec(forbidden_files=["pyproject.toml"]))
+            self.assertFalse(result["ok"])
+            self.assertEqual(result["task_forbidden_touched"], ["pyproject.toml"])
+            self.assertIn("task forbidden file touched: pyproject.toml", result["reasons"])
+
+    def test_passes_when_no_task_file_lists_are_provided(self) -> None:
+        with repo() as tmp:
+            (tmp / "app.py").write_text("print('hello')\n")
+            result = verify(tmp, task_spec=task_spec())
+            self.assertTrue(result["ok"], result["reasons"])
+            self.assertEqual(result["task_allowed_files"], [])
+            self.assertEqual(result["task_forbidden_files"], [])
+
 
 def verify(
     tmp: Path,
     config: Config | None = None,
     gates: list[dict[str, object]] | None = None,
     run_dir: Path | None = None,
+    task_spec: TaskSpec | None = None,
 ) -> dict[str, object]:
     run_dir = run_dir or tmp / "run"
     run_dir.mkdir(exist_ok=True)
-    return run_verifier(config or Config(), tmp, run_dir, gates or [{"command": "test", "ok": True}])
+    return run_verifier(config or Config(), tmp, run_dir, gates or [{"command": "test", "ok": True}], task_spec)
+
+
+def task_spec(allowed_files: list[str] | None = None, forbidden_files: list[str] | None = None) -> TaskSpec:
+    return TaskSpec("Task", "# Task\n", allowed_files=allowed_files or [], forbidden_files=forbidden_files or [])
 
 
 class repo:

@@ -2,7 +2,7 @@
 
 `agent-loop-factory` is a local control loop for supervised software-factory runs. It is the orchestrator that will eventually run agentic implementation loops against target repositories.
 
-It is not the target app being modified. v2.5 can optionally call Codex once inside a created worktree, runs gates, runs a deterministic verifier, then stops. It is still manual and local. By default it does not call LLMs, push branches, merge code, deploy, open PRs, or listen for webhooks.
+It is not the target app being modified. v4 can optionally call Codex once inside a created worktree, runs gates, runs a deterministic verifier, then stops. It is still manual and local. By default it does not call LLMs, push branches, merge code, deploy, open PRs, or listen for webhooks.
 
 ## v1
 
@@ -23,9 +23,10 @@ The verifier checks:
 - changed file count against `max_changed_files`
 - diff line count against `max_diff_lines`
 - touched `human_required_paths`
+- task spec `Allowed files` and `Forbidden files`
 - simple test weakening signals, including deleted files under `tests/`, removed assertions in test files, and added skip markers
 
-Each run writes `.agent/runs/<run_id>/verifier_result.json` with the verifier decision, reasons, warnings, changed files, diff size, human-required paths touched, and whether tests appear weakened or deleted.
+Each run writes `.agent/runs/<run_id>/verifier_result.json` with the verifier decision, reasons, warnings, changed files, diff size, human-required paths touched, task guardrail matches, and whether tests appear weakened or deleted.
 
 The final run status is passed only when gates and the verifier both pass. v2 keeps verification deterministic.
 
@@ -45,6 +46,25 @@ This is not a scheduler, PR bot, swarm, autonomous deployment system, Docker set
 v3 adds structured task specs: written Markdown job orders that can be passed with `--task-file`. Inline `--task` still works, and every run writes the task order to `.agent/runs/<run_id>/task_spec.md`.
 
 Use `docs/TASK_SPEC_TEMPLATE.md` for new specs. A sample is available at `tasks/fix-sample-add.md`.
+
+## v4
+
+v4 enforces simple task spec guardrails in the deterministic verifier. Markdown task specs may include:
+
+```markdown
+## Allowed files
+
+- `sample_math/__init__.py`
+- `tests/`
+
+## Forbidden files
+
+- `pyproject.toml`
+```
+
+If `Allowed files` is present, every changed target repo file must match one entry. Any changed file matching `Forbidden files` fails verification. Matching is intentionally simple: exact file match or directory prefix match for entries ending in `/`. Path separators are normalized to `/`; globbing is not implemented yet.
+
+Task specs are still intentionally simple Markdown. The parser finds those headings, reads bullet paths until the next heading, strips surrounding backticks, and otherwise leaves the task body untouched.
 
 ## Run
 
@@ -160,7 +180,7 @@ Unavailable commands are warnings in the run report, not crashes.
 
 ## Safety Boundaries
 
-v3 keeps hard limits in config, enforces them in the verifier, and repeats them in the Codex prompt:
+v4 keeps hard limits in config, enforces them in the verifier, and repeats them in the Codex prompt:
 
 - `max_iterations`
 - `max_changed_files`
@@ -185,4 +205,4 @@ Set `codex_command` if your executable has a different name or path.
 
 ## Roadmap
 
-- v3: manual and local; no scheduler, PR bot, swarm, LLM verifier, Docker, GitHub Actions, draft PRs, push, merge, deploy, publish, MCP, or connectors.
+- v4: manual and local; no scheduler, PR bot, swarm, LLM verifier, Docker, GitHub Actions, draft PRs, push, merge, deploy, publish, MCP, or connectors.
