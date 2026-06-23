@@ -10,6 +10,19 @@ from .config import Config
 
 SKIP_MARKERS = ("@unittest.skip", "pytest.mark.skip", "skipTest")
 ASSERT_MARKERS = ("assert", "assertEqual", "assertTrue", "assertFalse", "assertRaises")
+RESERVED_ARTIFACT_FILENAMES = {
+    "run_report.md",
+    "gate_results.json",
+    "verifier_result.json",
+    "diff_summary.md",
+    "task_spec.md",
+    "stdout.log",
+    "stderr.log",
+    "codex_prompt.md",
+    "codex_stdout.log",
+    "codex_stderr.log",
+    "codex_result.json",
+}
 
 
 def run_verifier(config: Config, worktree_path: Path | None, run_dir: Path, gates: list[dict[str, object]]) -> dict[str, object]:
@@ -21,6 +34,7 @@ def run_verifier(config: Config, worktree_path: Path | None, run_dir: Path, gate
         "changed_file_count": 0,
         "diff_line_count": 0,
         "human_required_touched": [],
+        "reserved_artifacts_touched": [],
         "tests_weakened_or_deleted": False,
     }
     reasons = result["reasons"]
@@ -46,6 +60,7 @@ def run_verifier(config: Config, worktree_path: Path | None, run_dir: Path, gate
     result["diff_line_count"] = sum(1 for line in diff.splitlines() if line.startswith(("+", "-")) and not line.startswith(("+++", "---")))
     result["diff_line_count"] += sum(_line_count(worktree_path / path) for path in untracked_files)
     result["human_required_touched"] = [path for path in changed_files if _human_required(path, config.human_required_paths)]
+    result["reserved_artifacts_touched"] = [path for path in changed_files if Path(path).name in RESERVED_ARTIFACT_FILENAMES]
     result["tests_weakened_or_deleted"] = _tests_weakened(name_status, diff)
 
     if result["changed_file_count"] > config.max_changed_files:
@@ -54,6 +69,8 @@ def run_verifier(config: Config, worktree_path: Path | None, run_dir: Path, gate
         reasons.append(f"diff_line_count exceeds max_diff_lines: {result['diff_line_count']} > {config.max_diff_lines}")
     if result["human_required_touched"]:
         reasons.append("human-required paths touched")
+    for path in result["reserved_artifacts_touched"]:
+        reasons.append(f"reserved run artifact file changed in target repo: {path}")
     if result["tests_weakened_or_deleted"]:
         reasons.append("tests appear weakened or deleted")
     return _write(run_dir, result)

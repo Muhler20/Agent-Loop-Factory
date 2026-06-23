@@ -40,6 +40,8 @@ Any out-of-scope file needs to change.
 
 ## Expected artifacts
 
+These are produced by Agent Loop Factory under `.agent/runs/<run_id>/`, not by the implementer inside the target repo.
+
 - `run_report.md`
 - `gate_results.json`
 - `verifier_result.json`

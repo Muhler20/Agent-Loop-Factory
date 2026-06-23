@@ -54,6 +54,24 @@ class VerifierTests(unittest.TestCase):
             self.assertEqual(result["changed_file_count"], 1)
             self.assertEqual(result["diff_line_count"], 2)
 
+    def test_fails_when_run_report_is_created_in_target_repo(self) -> None:
+        with repo() as tmp:
+            (tmp / "run_report.md").write_text("artifact\n")
+            result = verify(tmp)
+            self.assertFalse(result["ok"])
+            self.assertEqual(result["reserved_artifacts_touched"], ["run_report.md"])
+            self.assertIn("reserved run artifact file changed in target repo: run_report.md", result["reasons"])
+
+    def test_fails_when_json_artifacts_are_created_in_target_repo(self) -> None:
+        with repo() as tmp:
+            (tmp / "gate_results.json").write_text("{}\n")
+            (tmp / "verifier_result.json").write_text("{}\n")
+            result = verify(tmp)
+            self.assertFalse(result["ok"])
+            self.assertEqual(result["reserved_artifacts_touched"], ["gate_results.json", "verifier_result.json"])
+            self.assertIn("reserved run artifact file changed in target repo: gate_results.json", result["reasons"])
+            self.assertIn("reserved run artifact file changed in target repo: verifier_result.json", result["reasons"])
+
     def test_fails_when_human_required_paths_are_touched(self) -> None:
         with repo() as tmp:
             (tmp / "auth").mkdir()

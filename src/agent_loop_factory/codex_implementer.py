@@ -80,6 +80,9 @@ def build_prompt(task_spec: str, worktree_path: Path, config: Config) -> str:
 # Safety Limits
 
 - Make the smallest change that satisfies the task.
+- Agent Loop Factory writes run artifacts under `.agent/runs/<run_id>/`.
+- Do not create `run_report.md`, `gate_results.json`, `verifier_result.json`, `diff_summary.md`, `task_spec.md`, `codex_result.json`, `codex_stdout.log`, `codex_stderr.log`, `stdout.log`, or `stderr.log` inside the target repo.
+- Only change files needed for the task.
 - Do not push, merge, deploy, or open PRs.
 - Do not weaken tests to make gates pass.
 - Do not touch sensitive paths without human approval:

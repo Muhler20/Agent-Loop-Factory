@@ -67,6 +67,15 @@ class CodexImplementerTests(unittest.TestCase):
             self.assertIn("No AGENTS.md found.", prompt)
             self.assertIn("No CONSTRAINTS.md found.", prompt)
 
+    def test_prompt_tells_codex_not_to_create_run_artifacts_in_target_repo(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            prompt = build_prompt("do the task", Path(raw), Config())
+
+            self.assertIn("Agent Loop Factory writes run artifacts under `.agent/runs/<run_id>/`.", prompt)
+            self.assertIn("Do not create `run_report.md`, `gate_results.json`, `verifier_result.json`, `diff_summary.md`, `task_spec.md`", prompt)
+            self.assertIn("inside the target repo", prompt)
+            self.assertIn("Only change files needed for the task.", prompt)
+
 
 if __name__ == "__main__":
     unittest.main()
