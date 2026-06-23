@@ -39,8 +39,8 @@ def run_verifier(config: Config, worktree_path: Path | None, run_dir: Path, gate
         reasons.append("diff unavailable")
         return _write(run_dir, result)
 
-    untracked_files = _target_files([line for line in untracked.splitlines() if line])
-    changed_files = _target_files(_changed_files(name_status)) + untracked_files
+    untracked_files = _target_files([line for line in untracked.splitlines() if line], worktree_path, run_dir)
+    changed_files = _target_files(_changed_files(name_status), worktree_path, run_dir) + untracked_files
     result["changed_files"] = changed_files
     result["changed_file_count"] = len(changed_files)
     result["diff_line_count"] = sum(1 for line in diff.splitlines() if line.startswith(("+", "-")) and not line.startswith(("+++", "---")))
@@ -84,8 +84,17 @@ def _changed_files(name_status: str) -> list[str]:
     return files
 
 
-def _target_files(paths: list[str]) -> list[str]:
-    return [path for path in paths if not path.startswith(".agent/runs/")]
+def _target_files(paths: list[str], worktree_path: Path, run_dir: Path) -> list[str]:
+    run_prefix = _run_dir_prefix(worktree_path, run_dir)
+    return [path for path in paths if not path.startswith(".agent/runs/") and (not run_prefix or not path.startswith(run_prefix))]
+
+
+def _run_dir_prefix(worktree_path: Path, run_dir: Path) -> str | None:
+    try:
+        relative = run_dir.resolve().relative_to(worktree_path.resolve())
+    except ValueError:
+        return None
+    return relative.as_posix().rstrip("/") + "/"
 
 
 def _human_required(path: str, patterns: list[str]) -> bool:

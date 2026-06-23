@@ -40,25 +40,19 @@ class VerifierTests(unittest.TestCase):
             run_artifacts = [
                 "run_report.md",
                 "gate_results.json",
-                "verifier_result.json",
                 "diff_summary.md",
-                "stdout.log",
-                "stderr.log",
-                "codex_prompt.md",
-                "codex_stdout.log",
-                "codex_stderr.log",
-                "codex_result.json",
-                "task_spec.md",
+                "verifier_result.json",
             ]
-            artifact_dir = tmp / ".agent" / "runs" / "run-1"
-            artifact_dir.mkdir(parents=True)
+            artifact_dir = tmp / "run-1"
+            artifact_dir.mkdir()
             for artifact in run_artifacts:
                 (artifact_dir / artifact).write_text("artifact\n")
 
-            result = verify(tmp)
+            result = verify(tmp, run_dir=artifact_dir)
 
             self.assertEqual(result["changed_files"], ["sample_math/__init__.py"])
             self.assertEqual(result["changed_file_count"], 1)
+            self.assertEqual(result["diff_line_count"], 2)
 
     def test_fails_when_human_required_paths_are_touched(self) -> None:
         with repo() as tmp:
@@ -85,9 +79,14 @@ class VerifierTests(unittest.TestCase):
             self.assertTrue(result["tests_weakened_or_deleted"])
 
 
-def verify(tmp: Path, config: Config | None = None, gates: list[dict[str, object]] | None = None) -> dict[str, object]:
-    run_dir = tmp / "run"
-    run_dir.mkdir()
+def verify(
+    tmp: Path,
+    config: Config | None = None,
+    gates: list[dict[str, object]] | None = None,
+    run_dir: Path | None = None,
+) -> dict[str, object]:
+    run_dir = run_dir or tmp / "run"
+    run_dir.mkdir(exist_ok=True)
     return run_verifier(config or Config(), tmp, run_dir, gates or [{"command": "test", "ok": True}])
 
 
