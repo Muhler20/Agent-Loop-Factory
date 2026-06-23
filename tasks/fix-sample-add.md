@@ -16,7 +16,7 @@ Fix the failing `sample_math.add` test.
 
 ## Allowed files
 
-- `sample_math.py`
+- `sample_math/__init__.py`
 
 ## Forbidden files
 

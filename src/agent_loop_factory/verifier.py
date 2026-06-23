@@ -39,8 +39,8 @@ def run_verifier(config: Config, worktree_path: Path | None, run_dir: Path, gate
         reasons.append("diff unavailable")
         return _write(run_dir, result)
 
-    untracked_files = [line for line in untracked.splitlines() if line]
-    changed_files = _changed_files(name_status) + untracked_files
+    untracked_files = _target_files([line for line in untracked.splitlines() if line])
+    changed_files = _target_files(_changed_files(name_status)) + untracked_files
     result["changed_files"] = changed_files
     result["changed_file_count"] = len(changed_files)
     result["diff_line_count"] = sum(1 for line in diff.splitlines() if line.startswith(("+", "-")) and not line.startswith(("+++", "---")))
@@ -82,6 +82,10 @@ def _changed_files(name_status: str) -> list[str]:
             continue
         files.append(parts[-1])
     return files
+
+
+def _target_files(paths: list[str]) -> list[str]:
+    return [path for path in paths if not path.startswith(".agent/runs/")]
 
 
 def _human_required(path: str, patterns: list[str]) -> bool:

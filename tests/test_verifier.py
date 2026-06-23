@@ -34,6 +34,32 @@ class VerifierTests(unittest.TestCase):
             self.assertFalse(result["ok"])
             self.assertIn("changed_file_count exceeds max_changed_files: 2 > 1", result["reasons"])
 
+    def test_changed_files_ignore_run_artifacts(self) -> None:
+        with repo({"sample_math/__init__.py": "def add(a, b):\n    return 0\n"}) as tmp:
+            (tmp / "sample_math" / "__init__.py").write_text("def add(a, b):\n    return a + b\n")
+            run_artifacts = [
+                "run_report.md",
+                "gate_results.json",
+                "verifier_result.json",
+                "diff_summary.md",
+                "stdout.log",
+                "stderr.log",
+                "codex_prompt.md",
+                "codex_stdout.log",
+                "codex_stderr.log",
+                "codex_result.json",
+                "task_spec.md",
+            ]
+            artifact_dir = tmp / ".agent" / "runs" / "run-1"
+            artifact_dir.mkdir(parents=True)
+            for artifact in run_artifacts:
+                (artifact_dir / artifact).write_text("artifact\n")
+
+            result = verify(tmp)
+
+            self.assertEqual(result["changed_files"], ["sample_math/__init__.py"])
+            self.assertEqual(result["changed_file_count"], 1)
+
     def test_fails_when_human_required_paths_are_touched(self) -> None:
         with repo() as tmp:
             (tmp / "auth").mkdir()
