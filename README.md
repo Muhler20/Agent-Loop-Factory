@@ -2,7 +2,7 @@
 
 `agent-loop-factory` is a local control loop for supervised software-factory runs. It is the orchestrator that will eventually run agentic implementation loops against target repositories.
 
-It is not the target app being modified. v4 can optionally call Codex once inside a created worktree, runs gates, runs a deterministic verifier, then stops. It is still manual and local. By default it does not call LLMs, push branches, merge code, deploy, open PRs, or listen for webhooks.
+It is not the target app being modified. v5 can optionally call Codex once inside a created worktree, runs gates, runs a deterministic verifier, then stops. It is still manual and local. By default it does not call LLMs, push branches, merge code, deploy, open PRs, or listen for webhooks.
 
 ## v1
 
@@ -66,6 +66,14 @@ If `Allowed files` is present, every changed target repo file must match one ent
 
 Task specs are still intentionally simple Markdown. The parser finds those headings, reads bullet paths until the next heading, strips surrounding backticks, and otherwise leaves the task body untouched.
 
+## v5
+
+v5 adds explicit repo-local skills. A skill is a reusable Markdown playbook stored at `skills/<skill_name>/SKILL.md` and included in the Codex prompt when selected with `--skill`.
+
+Skills are local repo playbooks, not auto-installed plugins. There is no skill auto-selection or marketplace.
+
+v5 does not add scheduling, PR creation, GitHub automation, Docker, GitHub Actions, MCP/connectors, LLM verification, or parallel agents.
+
 ## Run
 
 ```bash
@@ -90,6 +98,12 @@ Run from a task spec:
 python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --implementer codex
 ```
 
+Run from a task spec with a local skill:
+
+```bash
+python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --skill failing-test-fix --implementer codex
+```
+
 Dry-run creates the run record and planned artifacts without creating a git worktree or running gates:
 
 ```bash
@@ -105,6 +119,10 @@ Each run writes:
 - `.agent/runs/<run_id>/stderr.log`
 - `.agent/runs/<run_id>/diff_summary.md`
 - `.agent/runs/<run_id>/task_spec.md`
+
+When `--skill` is used, the run also writes:
+
+- `.agent/runs/<run_id>/skill.md`
 
 When `--implementer codex` is used, the run also writes:
 
@@ -191,7 +209,7 @@ v4 keeps hard limits in config, enforces them in the verifier, and repeats them 
 - `auto_merge: false`
 - `auto_deploy: false`
 
-Codex is told to make the smallest change, avoid weakening tests, avoid sensitive paths without approval, stop after editing files, and not claim success. The prompt also includes the task spec, plus `AGENTS.md` and `CONSTRAINTS.md` when present. Gates plus the deterministic verifier decide success.
+Codex is told to make the smallest change, avoid weakening tests, avoid sensitive paths without approval, stop after editing files, and not claim success. The prompt also includes the task spec, selected skill if any, plus `AGENTS.md` and `CONSTRAINTS.md` when present. Gates plus the deterministic verifier decide success.
 
 ## Troubleshooting
 
@@ -205,4 +223,4 @@ Set `codex_command` if your executable has a different name or path.
 
 ## Roadmap
 
-- v4: manual and local; no scheduler, PR bot, swarm, LLM verifier, Docker, GitHub Actions, draft PRs, push, merge, deploy, publish, MCP, or connectors.
+- v5: manual and local; no scheduler, PR bot, swarm, LLM verifier, Docker, GitHub Actions, draft PRs, push, merge, deploy, publish, MCP, connectors, parallel agents, skill auto-selection, or skill marketplace.

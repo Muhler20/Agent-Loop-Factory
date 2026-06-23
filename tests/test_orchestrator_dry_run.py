@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from agent_loop_factory.orchestrator import run
+from agent_loop_factory.skill import Skill
 
 
 def write_agent_config(tmp_path: Path) -> None:
@@ -73,6 +74,36 @@ class OrchestratorDryRunTests(unittest.TestCase):
             self.assertIn("Task forbidden files:\n- tests/", report)
             self.assertEqual(verifier["task_allowed_files"], ["sample_math/__init__.py"])
             self.assertEqual(verifier["task_forbidden_files"], ["tests/"])
+
+    def test_skill_artifact_is_written_when_skill_is_used(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            write_agent_config(tmp_path)
+            skill = Skill("failing-test-fix", "Keep tests strong.\n", str(tmp_path / "skills/failing-test-fix/SKILL.md"))
+
+            result = run("test task description", tmp_path, dry_run=True, skill=skill)
+            run_dir = Path(result["run_dir"])
+            report = (run_dir / "run_report.md").read_text()
+
+            self.assertEqual((run_dir / "skill.md").read_text(), "Keep tests strong.\n")
+            self.assertIn("## Skill", report)
+            self.assertIn("skill_name: failing-test-fix", report)
+            self.assertIn("skill_source: file", report)
+            self.assertIn(f"skill_file_path: {skill.skill_file_path}", report)
+
+    def test_skill_artifact_is_not_written_without_skill(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            write_agent_config(tmp_path)
+
+            result = run("test task description", tmp_path, dry_run=True)
+            run_dir = Path(result["run_dir"])
+            report = (run_dir / "run_report.md").read_text()
+
+            self.assertFalse((run_dir / "skill.md").exists())
+            self.assertIn("## Skill", report)
+            self.assertIn("skill_name: none", report)
+            self.assertIn("skill_source: none", report)
 
 
 if __name__ == "__main__":

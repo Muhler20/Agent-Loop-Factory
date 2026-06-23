@@ -11,6 +11,7 @@ from .codex_implementer import run_codex_implementer, write_codex_skip
 from .config import load_config
 from .create_worktree import create_worktree
 from .run_gates import run_gates
+from .skill import Skill
 from .summarize_diff import write_diff_summary
 from .task_spec import TaskSpec, inline_task_spec, task_spec_from_body
 from .update_progress import build_progress
@@ -24,6 +25,7 @@ def run(
     implementer: str | None = None,
     codex_runner=None,
     task_file_path: str | None = None,
+    skill: Skill | None = None,
 ) -> dict[str, object]:
     repo_root = repo_root.resolve()
     agent_dir = repo_root / ".agent"
@@ -32,6 +34,8 @@ def run(
     run_dir.mkdir(parents=True, exist_ok=True)
     task_spec = task_spec_from_body(task_body, task_file_path) if task_file_path else inline_task_spec(task_body)
     (run_dir / "task_spec.md").write_text(task_spec.task_body)
+    if skill:
+        (run_dir / "skill.md").write_text(skill.skill_body)
 
     config = load_config(agent_dir / "config.yaml")
     target_repo = (repo_root / config.target_repo_path).resolve()
@@ -54,7 +58,7 @@ def run(
         elif not worktree.ok or not worktree.path:
             codex_result = write_codex_skip(run_dir, "worktree unavailable: codex not executed")
         else:
-            codex_result = run_codex_implementer(task_spec.task_body, worktree.path, run_dir, config, runner=codex_runner or subprocess.run)
+            codex_result = run_codex_implementer(task_spec.task_body, worktree.path, run_dir, config, skill=skill, runner=codex_runner or subprocess.run)
     # TODO: future verifier agent call
     # TODO: future Docker build gate
     # TODO: future Docker Compose deployment check
@@ -65,7 +69,7 @@ def run(
     gates_ok = all(bool(gate["ok"]) for gate in gates)
     ok = worktree.ok and implementer_ok and gates_ok and bool(verifier_result["ok"])
 
-    report = _report(task_spec, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, verifier_result, diff_summary, ok)
+    report = _report(task_spec, skill, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, verifier_result, diff_summary, ok)
     (run_dir / "run_report.md").write_text(report)
     _update_state(agent_dir / "state.json", run_id, ok)
 
@@ -89,7 +93,7 @@ def _run_id() -> str:
     return f"{stamp}-{secrets.token_hex(3)}"
 
 
-def _report(task_spec: TaskSpec, run_id: str, dry_run: bool, implementer: str, codex_result, config, worktree, gates, verifier_result, diff_summary: str, ok: bool) -> str:
+def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool, implementer: str, codex_result, config, worktree, gates, verifier_result, diff_summary: str, ok: bool) -> str:
     warnings = [str(gate["warning"]) for gate in gates if gate.get("warning")]
     if not worktree.ok:
         warnings.append(worktree.message)
@@ -112,6 +116,9 @@ def _report(task_spec: TaskSpec, run_id: str, dry_run: bool, implementer: str, c
     )
     task_source = "file" if task_spec.task_file_path else "inline"
     task_file = f"- task_file_path: {task_spec.task_file_path}\n" if task_spec.task_file_path else ""
+    skill_source = "file" if skill else "none"
+    skill_name = skill.skill_name if skill else "none"
+    skill_file = f"- skill_file_path: {skill.skill_file_path}\n" if skill else ""
     return f"""# Run Report
 
 ## Run
@@ -127,6 +134,11 @@ def _report(task_spec: TaskSpec, run_id: str, dry_run: bool, implementer: str, c
 - task_title: {task_spec.task_title}
 - task_source: {task_source}
 {task_file}
+## Skill
+
+- skill_name: {skill_name}
+- skill_source: {skill_source}
+{skill_file}
 ## Worktree
 
 - branch: {worktree.branch}

@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from agent_loop_factory.orchestrator import run
+from agent_loop_factory.skill import load_skill
 from agent_loop_factory.task_spec import load_task_spec
 
 
@@ -19,10 +20,12 @@ def main() -> int:
     task_group.add_argument("--task-file", type=Path)
     parser.add_argument("--implementer", choices=["none", "codex"], default="none")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--skill")
     args = parser.parse_args()
 
     try:
         task_spec = load_task_spec(args.task_file) if args.task_file else None
+        skill = load_skill(ROOT, args.skill) if args.skill else None
     except ValueError as exc:
         parser.error(str(exc))
 
@@ -32,6 +35,7 @@ def main() -> int:
         dry_run=args.dry_run,
         implementer=args.implementer,
         task_file_path=task_spec.task_file_path if task_spec else None,
+        skill=skill,
     )
     print(f"run_id={result['run_id']}")
     print(f"run_dir={result['run_dir']}")

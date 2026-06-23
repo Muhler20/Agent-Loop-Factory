@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Callable
 
 from .config import Config
+from .skill import Skill
 
 
 Runner = Callable[..., subprocess.CompletedProcess[str]]
@@ -26,8 +27,9 @@ def run_codex_implementer(
     run_dir: Path,
     config: Config,
     runner: Runner = subprocess.run,
+    skill: Skill | None = None,
 ) -> CodexResult:
-    prompt = build_prompt(task_spec, worktree_path, config)
+    prompt = build_prompt(task_spec, worktree_path, config, skill)
     (run_dir / "codex_prompt.md").write_text(prompt)
 
     command = [config.codex_command, "exec", "--cd", str(worktree_path), "--sandbox", "workspace-write", *config.codex_exec_args, "-"]
@@ -61,13 +63,18 @@ def write_codex_skip(run_dir: Path, reason: str) -> CodexResult:
     return result
 
 
-def build_prompt(task_spec: str, worktree_path: Path, config: Config) -> str:
+def build_prompt(task_spec: str, worktree_path: Path, config: Config, skill: Skill | None = None) -> str:
     agents_text = _optional_context(worktree_path, "AGENTS.md")
     constraints_text = _optional_context(worktree_path, "CONSTRAINTS.md")
+    skill_text = skill.skill_body if skill else "No skill selected."
     sensitive_paths = "\n".join(f"- {path}" for path in config.human_required_paths)
     return f"""# Task Spec
 
 {task_spec}
+
+# Skill
+
+{skill_text}
 
 # AGENTS.md
 

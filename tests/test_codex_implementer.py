@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from agent_loop_factory.codex_implementer import build_prompt, run_codex_implementer
 from agent_loop_factory.config import Config
+from agent_loop_factory.skill import Skill
 
 
 class CodexImplementerTests(unittest.TestCase):
@@ -41,6 +42,7 @@ class CodexImplementerTests(unittest.TestCase):
             )
             self.assertIn("fix the tiny failure", (run_dir / "codex_prompt.md").read_text())
             self.assertIn("# Task Spec", (run_dir / "codex_prompt.md").read_text())
+            self.assertIn("# Skill", (run_dir / "codex_prompt.md").read_text())
             self.assertIn("Never weaken tests.", (run_dir / "codex_prompt.md").read_text())
             self.assertIn("Keep diffs small.", (run_dir / "codex_prompt.md").read_text())
             self.assertIn("Never weaken tests.", calls[0][1]["input"])
@@ -64,8 +66,18 @@ class CodexImplementerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             prompt = build_prompt("do the task", Path(raw), Config())
 
+            self.assertIn("# Skill\n\nNo skill selected.", prompt)
             self.assertIn("No AGENTS.md found.", prompt)
             self.assertIn("No CONSTRAINTS.md found.", prompt)
+
+    def test_prompt_includes_skill_content_when_skill_is_used(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            skill = Skill("failing-test-fix", "Inspect the failing test.\n", "skills/failing-test-fix/SKILL.md")
+
+            prompt = build_prompt("do the task", Path(raw), Config(), skill)
+
+            self.assertIn("# Skill\n\nInspect the failing test.", prompt)
+            self.assertIn("# Task Spec\n\ndo the task", prompt)
 
     def test_prompt_tells_codex_not_to_create_run_artifacts_in_target_repo(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
