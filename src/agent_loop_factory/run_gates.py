@@ -6,7 +6,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from .config import Config
+from .config import Config, normalize_gates
 
 
 def run_gates(config: Config, cwd: Path, run_dir: Path, dry_run: bool = False) -> list[dict[str, object]]:
@@ -14,8 +14,17 @@ def run_gates(config: Config, cwd: Path, run_dir: Path, dry_run: bool = False) -
     stdout_log = run_dir / "stdout.log"
     stderr_log = run_dir / "stderr.log"
 
-    for command in config.gates:
-        result: dict[str, object] = {"command": command, "ok": False, "returncode": None, "warning": None}
+    for gate in normalize_gates(config.gates):
+        command = str(gate["command"])
+        required = bool(gate["required"])
+        result: dict[str, object] = {
+            "name": gate["name"],
+            "command": command,
+            "required": required,
+            "ok": False,
+            "returncode": None,
+            "warning": None,
+        }
         if command not in config.allowed_commands:
             result["warning"] = "command not allowed by config"
         elif dry_run:
@@ -34,6 +43,8 @@ def run_gates(config: Config, cwd: Path, run_dir: Path, dry_run: bool = False) -
                 stderr.write(completed.stderr)
             result["ok"] = completed.returncode == 0
             result["returncode"] = completed.returncode
+            if not result["ok"] and not required:
+                result["warning"] = "optional gate failed"
         results.append(result)
 
     (run_dir / "gate_results.json").write_text(json.dumps(results, indent=2) + "\n")

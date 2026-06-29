@@ -25,8 +25,53 @@ class RunGatesTests(unittest.TestCase):
             results = run_gates(config, tmp_path, tmp_path)
 
             self.assertTrue(results[0]["ok"])
+            self.assertEqual(results[0]["name"], command)
+            self.assertEqual(results[0]["command"], command)
+            self.assertTrue(results[0]["required"])
+            self.assertEqual(results[0]["returncode"], 0)
             self.assertIn("initial stdout\nhello world\n", (tmp_path / "stdout.log").read_text())
             self.assertIn("initial stderr\nerr msg\n", (tmp_path / "stderr.log").read_text())
+
+    def test_named_required_gate_records_shape(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            command = f"{shlex.quote(sys.executable)} -c \"print('ok')\""
+            config = Config(allowed_commands=[command], gates=[{"name": "unit tests", "command": command, "required": True}])
+
+            results = run_gates(config, tmp_path, tmp_path)
+
+            self.assertEqual(results[0]["name"], "unit tests")
+            self.assertEqual(results[0]["command"], command)
+            self.assertTrue(results[0]["required"])
+            self.assertTrue(results[0]["ok"])
+            self.assertEqual(results[0]["returncode"], 0)
+            self.assertIsNone(results[0]["warning"])
+
+    def test_optional_failing_gate_records_warning(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            command = f"{shlex.quote(sys.executable)} -c \"raise SystemExit(7)\""
+            config = Config(allowed_commands=[command], gates=[{"name": "lint", "command": command, "required": False}])
+
+            results = run_gates(config, tmp_path, tmp_path)
+
+            self.assertEqual(results[0]["name"], "lint")
+            self.assertFalse(results[0]["required"])
+            self.assertFalse(results[0]["ok"])
+            self.assertEqual(results[0]["returncode"], 7)
+            self.assertEqual(results[0]["warning"], "optional gate failed")
+
+    def test_allowed_commands_checks_object_command_field(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            command = f"{shlex.quote(sys.executable)} -c \"print('ok')\""
+            config = Config(allowed_commands=["different command"], gates=[{"name": "unit tests", "command": command}])
+
+            results = run_gates(config, tmp_path, tmp_path)
+
+            self.assertFalse(results[0]["ok"])
+            self.assertEqual(results[0]["warning"], "command not allowed by config")
+            self.assertEqual(results[0]["returncode"], None)
 
 
 if __name__ == "__main__":

@@ -52,8 +52,12 @@ def run_verifier(
     }
     reasons = result["reasons"]
 
-    if any(not gate.get("ok") for gate in gates):
+    failed_required_gates = [gate for gate in gates if gate.get("required", True) and not gate.get("ok")]
+    failed_optional_gates = [gate for gate in gates if not gate.get("required", True) and not gate.get("ok")]
+    if failed_required_gates:
         reasons.append("one or more gates failed")
+    for gate in failed_optional_gates:
+        result["warnings"].append(f"optional gate failed: {gate.get('name', gate.get('command', 'unknown'))}")
 
     if not worktree_path or not worktree_path.exists():
         reasons.append("worktree unavailable")

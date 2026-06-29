@@ -2,7 +2,7 @@
 
 `agent-loop-factory` is a local control loop for supervised software-factory runs. It is the orchestrator that will eventually run agentic implementation loops against target repositories.
 
-It is not the target app being modified. v5 can optionally call Codex once inside a created worktree, runs gates, runs a deterministic verifier, then stops. It is still manual and local. By default it does not call LLMs, push branches, merge code, deploy, open PRs, or listen for webhooks.
+It is not the target app being modified. v6 can optionally call Codex once inside a created worktree, runs gates, runs a deterministic verifier, then stops. It is still manual and local. By default it does not call LLMs, push branches, merge code, deploy, open PRs, or listen for webhooks.
 
 ## v1
 
@@ -73,6 +73,32 @@ v5 adds explicit repo-local skills. A skill is a reusable Markdown playbook stor
 Skills are local repo playbooks, not auto-installed plugins. There is no skill auto-selection or marketplace.
 
 v5 does not add scheduling, PR creation, GitHub automation, Docker, GitHub Actions, MCP/connectors, LLM verification, or parallel agents.
+
+## v6
+
+v6 makes gates and reports more inspectable while staying backward compatible.
+
+String gates still work:
+
+```yaml
+gates:
+  - "python3 -m unittest discover -s tests"
+```
+
+Named gate objects are also supported:
+
+```yaml
+gates:
+  - name: unit tests
+    command: "python3 -m unittest discover -s tests"
+    required: true
+```
+
+For string gates, `name` defaults to the command and `required` defaults to `true`. For object gates, `command` is required, `name` defaults to `command`, and `required` defaults to `true`. Required gate failures fail the run. Optional gate failures are recorded as warnings in `gate_results.json`, `verifier_result.json`, and `run_report.md`, but do not fail the run by themselves.
+
+`allowed_commands` still checks the gate command string, not the display name.
+
+Diff summaries now include tracked diff stats and untracked files. An untracked-only change no longer reports `No diff.`.
 
 ## Run
 
@@ -194,6 +220,20 @@ Default gates are detected from the target repo:
 
 For a stdlib-only Python repo, set `allowed_commands` and `gates` to `python3 -m unittest discover -s tests`.
 
+Use a named gate when the command is noisy or when a gate should be optional:
+
+```yaml
+allowed_commands:
+  - "python3 -m unittest discover -s tests"
+  - "ruff check ."
+gates:
+  - name: unit tests
+    command: "python3 -m unittest discover -s tests"
+  - name: lint
+    command: "ruff check ."
+    required: false
+```
+
 Unavailable commands are warnings in the run report, not crashes.
 
 ## Safety Boundaries
@@ -223,4 +263,4 @@ Set `codex_command` if your executable has a different name or path.
 
 ## Roadmap
 
-- v5: manual and local; no scheduler, PR bot, swarm, LLM verifier, Docker, GitHub Actions, draft PRs, push, merge, deploy, publish, MCP, connectors, parallel agents, skill auto-selection, or skill marketplace.
+- v6: manual and local; no scheduler, PR bot, swarm, LLM verifier, Docker, GitHub Actions, draft PRs, push, merge, deploy, publish, MCP, connectors, parallel agents, skill auto-selection, or skill marketplace.

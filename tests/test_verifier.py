@@ -23,9 +23,16 @@ class VerifierTests(unittest.TestCase):
     def test_fails_when_gates_fail(self) -> None:
         with repo() as tmp:
             (tmp / "app.py").write_text("print('hello')\n")
-            result = verify(tmp, gates=[{"command": "test", "ok": False}])
+            result = verify(tmp, gates=[{"name": "test", "command": "test", "required": True, "ok": False}])
             self.assertFalse(result["ok"])
             self.assertIn("one or more gates failed", result["reasons"])
+
+    def test_optional_gate_failure_warns_without_failing(self) -> None:
+        with repo() as tmp:
+            (tmp / "app.py").write_text("print('hello')\n")
+            result = verify(tmp, gates=[{"name": "lint", "command": "lint", "required": False, "ok": False}])
+            self.assertTrue(result["ok"], result["reasons"])
+            self.assertIn("optional gate failed: lint", result["warnings"])
 
     def test_fails_when_changed_file_count_exceeds_max_changed_files(self) -> None:
         with repo() as tmp:

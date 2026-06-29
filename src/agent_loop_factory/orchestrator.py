@@ -66,7 +66,7 @@ def run(
     verifier_result = run_verifier(config, worktree.path if worktree.ok and not dry_run else None, run_dir, gates, task_spec)
     diff_summary = write_diff_summary(gate_cwd, run_dir / "diff_summary.md", config.max_diff_lines, dry_run=dry_run or not worktree.ok)
     implementer_ok = selected_implementer != "codex" or bool(codex_result and codex_result.ok)
-    gates_ok = all(bool(gate["ok"]) for gate in gates)
+    gates_ok = all(bool(gate["ok"]) for gate in gates if gate.get("required", True))
     ok = worktree.ok and implementer_ok and gates_ok and bool(verifier_result["ok"])
 
     report = _report(task_spec, skill, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, verifier_result, diff_summary, ok)
@@ -100,7 +100,7 @@ def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool
     if codex_result and codex_result.error:
         warnings.append(codex_result.error)
     warning_text = "\n".join(f"- {warning}" for warning in warnings) or "- None."
-    gate_text = "\n".join(f"- {gate['command']}: {'ok' if gate['ok'] else 'not ok'}" for gate in gates) or "- No gates detected."
+    gate_text = "\n".join(_gate_report(gate) for gate in gates) or "- No gates detected."
     verifier_reasons = "\n".join(f"- {reason}" for reason in verifier_result["reasons"]) or "- None."
     verifier_warnings = "\n".join(f"- {warning}" for warning in verifier_result["warnings"]) or "- None."
     verifier_human = "\n".join(f"- {path}" for path in verifier_result["human_required_touched"]) or "- None."
@@ -202,6 +202,15 @@ Task forbidden touched:
 def _list(values: object) -> str:
     items = values if isinstance(values, list) else []
     return "\n".join(f"- {value}" for value in items) or "- None."
+
+
+def _gate_report(gate: dict[str, object]) -> str:
+    warning = f" ({gate['warning']})" if gate.get("warning") else ""
+    return (
+        f"- {gate.get('name', gate.get('command'))}: {'ok' if gate.get('ok') else 'not ok'}{warning}\n"
+        f"  - command: {gate['command']}\n"
+        f"  - required: {str(gate.get('required', True)).lower()}"
+    )
 
 
 def _update_state(path: Path, run_id: str, ok: bool) -> None:
