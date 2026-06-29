@@ -16,6 +16,7 @@ RESERVED_ARTIFACT_FILENAMES = {
     "gate_results.json",
     "verifier_result.json",
     "diff_summary.md",
+    "review_bundle.md",
     "task_spec.md",
     "stdout.log",
     "stderr.log",

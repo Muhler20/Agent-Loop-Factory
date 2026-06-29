@@ -11,6 +11,7 @@ from .codex_implementer import run_codex_implementer, write_codex_skip
 from .config import load_config
 from .create_worktree import create_worktree
 from .run_gates import run_gates
+from .review_bundle import write_review_bundle
 from .skill import Skill
 from .summarize_diff import write_diff_summary
 from .task_spec import TaskSpec, inline_task_spec, task_spec_from_body
@@ -69,7 +70,8 @@ def run(
     gates_ok = all(bool(gate["ok"]) for gate in gates if gate.get("required", True))
     ok = worktree.ok and implementer_ok and gates_ok and bool(verifier_result["ok"])
 
-    report = _report(task_spec, skill, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, verifier_result, diff_summary, ok)
+    review_recommendation, _ = write_review_bundle(run_dir, run_id, task_spec, skill, selected_implementer, worktree, gates, verifier_result, diff_summary, ok)
+    report = _report(task_spec, skill, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, verifier_result, diff_summary, ok, review_recommendation)
     (run_dir / "run_report.md").write_text(report)
     _update_state(agent_dir / "state.json", run_id, ok)
 
@@ -93,7 +95,7 @@ def _run_id() -> str:
     return f"{stamp}-{secrets.token_hex(3)}"
 
 
-def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool, implementer: str, codex_result, config, worktree, gates, verifier_result, diff_summary: str, ok: bool) -> str:
+def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool, implementer: str, codex_result, config, worktree, gates, verifier_result, diff_summary: str, ok: bool, review_recommendation: str = "Unavailable") -> str:
     warnings = [str(gate["warning"]) for gate in gates if gate.get("warning")]
     if not worktree.ok:
         warnings.append(worktree.message)
@@ -176,6 +178,11 @@ Task allowed violations:
 
 Task forbidden touched:
 {verifier_forbidden_touched}
+
+## Review Bundle
+
+- path: .agent/runs/{run_id}/review_bundle.md
+- recommendation: {review_recommendation}
 
 ## Codex Implementer
 

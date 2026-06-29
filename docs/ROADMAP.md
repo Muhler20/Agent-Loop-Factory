@@ -14,6 +14,7 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - v5 local skills
 - v6 named gates and diff reporting
 - v6.1 docs and roadmap cleanup
+- v7 human review bundle
 
 ## Current Capabilities
 
@@ -28,31 +29,13 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - Configured string or named gates.
 - Required and optional gate results.
 - Deterministic verifier for gates, diff size, changed files, human-required paths, task guardrails, reserved artifacts, and simple test weakening signals.
+- Human-readable `review_bundle.md` with checklist and conservative recommendation.
 - Run artifacts under `.agent/runs/<run_id>/`.
 - Human review boundary after every run.
 
 ## Next Recommended Milestone
 
-v7 human review bundle.
-
-Generate:
-
-```text
-.agent/runs/<run_id>/review_bundle.md
-```
-
-Include:
-
-- task summary
-- skill used
-- changed files
-- gate results
-- verifier result
-- diff summary
-- human review checklist
-- recommended human decision
-
-The bundle should make review easier without changing runtime autonomy. It should not merge, deploy, publish, open PRs, or approve its own work.
+v8 draft PR support, no auto-merge.
 
 ## Future Milestones
 
@@ -62,7 +45,7 @@ The bundle should make review easier without changing runtime autonomy. It shoul
 - v11 scheduler / recurring runs
 - v12 multi-agent or parallel execution
 
-These are planned milestones. They are not implemented in v6.1.
+These are planned milestones. They are not implemented in v7.
 
 ## Explicit Non-Goals
 

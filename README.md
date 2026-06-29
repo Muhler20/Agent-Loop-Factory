@@ -232,6 +232,7 @@ Each run writes:
 - `.agent/runs/<run_id>/stdout.log`
 - `.agent/runs/<run_id>/stderr.log`
 - `.agent/runs/<run_id>/diff_summary.md`
+- `.agent/runs/<run_id>/review_bundle.md`
 - `.agent/runs/<run_id>/task_spec.md`
 
 When `--skill` is used, the run also writes:
@@ -246,6 +247,8 @@ When `--implementer codex` is used, the run also writes:
 - `.agent/runs/<run_id>/codex_result.json`
 
 The orchestrator also updates `.agent/state.json` and `PROGRESS.md`.
+
+`review_bundle.md` is the human review artifact. It collects the task, skill, changed files, gates, verifier result, diff summary, checklist, and a conservative recommendation such as `ready_for_human_review`, `manual_review_required`, or `reject_or_rework`. It exists to make the pre-PR review step easier before draft PR support is added. It does not approve, merge, push, open PRs, or deploy.
 
 ## Verifier Checks
 
@@ -283,7 +286,7 @@ The Codex prompt includes the task, selected skill, configured safety limits, `A
 
 See [docs/ROADMAP.md](docs/ROADMAP.md).
 
-Planned items are not implemented unless listed above. The next recommended milestone is v7 human review bundle generation, not autonomous merge or deployment.
+Planned items are not implemented unless listed above. The current implemented milestone is v7 human review bundle generation, not autonomous merge or deployment.
 
 ## Troubleshooting
 

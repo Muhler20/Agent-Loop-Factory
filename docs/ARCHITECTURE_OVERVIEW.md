@@ -57,7 +57,7 @@ The verifier is deterministic. It checks required gate results, changed file cou
 
 ### Artifacts
 
-Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.md`, `gate_results.json`, `verifier_result.json`, logs, `diff_summary.md`, and `task_spec.md`. Skill and Codex artifacts are written only when those features are used.
+Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.md`, `review_bundle.md`, `gate_results.json`, `verifier_result.json`, logs, `diff_summary.md`, and `task_spec.md`. Skill and Codex artifacts are written only when those features are used.
 
 ### Progress and State Memory
 
@@ -65,9 +65,9 @@ Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.m
 
 ### Human Review Boundary
 
-The loop stops after artifacts are written. A human reviews the diff, gates, verifier result, and report before deciding what to do next.
+The loop stops after artifacts are written. `review_bundle.md` collects the diff summary, gates, verifier result, task guardrails, and checklist for the human decision. It is a review aid only; it does not approve, merge, push, open PRs, or deploy.
 
-## Current Implemented System Through v6
+## Current Implemented System Through v7
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -78,6 +78,7 @@ The loop stops after artifacts are written. A human reviews the diff, gates, ver
 - v4 task spec guardrails
 - v5 local skills
 - v6 named gates and diff reporting
+- v7 human review bundle
 
 ## Intentionally Not Implemented Yet
 
@@ -100,8 +101,6 @@ The safety model is local, supervised, and deterministic:
 
 ## Future Roadmap
 
-- v6.1 docs and roadmap cleanup
-- v7 human review bundle
 - v8 draft PR support, no auto-merge
 - v9 GitHub issue / CI trigger support
 - v10 optional LLM reviewer

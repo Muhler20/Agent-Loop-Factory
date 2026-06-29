@@ -75,6 +75,7 @@ run_dir=/home/mikestryke/coding-projects/agent-loop-factory/.agent/runs/<run_id>
 ```bash
 ls .agent/runs/<run_id>
 sed -n '1,220p' .agent/runs/<run_id>/run_report.md
+sed -n '1,260p' .agent/runs/<run_id>/review_bundle.md
 cat .agent/runs/<run_id>/gate_results.json
 cat .agent/runs/<run_id>/verifier_result.json
 sed -n '1,220p' .agent/runs/<run_id>/diff_summary.md
@@ -85,6 +86,7 @@ sed -n '1,220p' .agent/runs/<run_id>/codex_prompt.md
 Expected artifacts include:
 
 - `run_report.md`
+- `review_bundle.md`
 - `gate_results.json`
 - `verifier_result.json`
 - `diff_summary.md`
@@ -104,6 +106,13 @@ In `run_report.md`:
 - the worktree path includes `sample-target-repo`
 - the gate named `unit tests` is `ok`
 - verifier `ok` is `True`
+- the review bundle path and recommendation are listed
+
+In `review_bundle.md`:
+
+- the changed file is `sample_math/__init__.py`
+- the gates and verifier sections are present
+- the recommendation is `ready_for_human_review`
 
 In `verifier_result.json`:
 
