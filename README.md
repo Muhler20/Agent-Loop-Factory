@@ -1,84 +1,197 @@
 # agent-loop-factory
 
-`agent-loop-factory` is a local control loop for supervised software-factory runs. It is the orchestrator that will eventually run agentic implementation loops against target repositories.
+`agent-loop-factory` is a supervised software-agent control loop for local coding-agent runs. It creates an isolated git worktree for a target repository, optionally asks Codex to make one small change, runs configured gates, verifies the resulting diff deterministically, writes audit artifacts, and stops for human review.
 
-It is not the target app being modified. v6 can optionally call Codex once inside a created worktree, runs gates, runs a deterministic verifier, then stops. It is still manual and local. By default it does not call LLMs, push branches, merge code, deploy, open PRs, or listen for webhooks.
+It is not an autonomous coding platform. Through v6 it is local, manually triggered, and human-in-the-loop. It does not push, merge, deploy, open PRs, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, or connect to GitHub/MCP services.
 
-## v1
+## What It Solves
 
-v1 adds one optional implementer worker:
+Agent Loop Factory is for small, repeatable coding tasks where the target repo has runnable checks and a human wants a clear review boundary. It turns a coding-agent attempt into a controlled run with:
 
-- `--implementer none` is the default and keeps the existing safe behavior.
-- `--implementer codex` runs `codex exec` once inside the created worktree.
-- Gates run after the implementer attempt.
-- Artifacts record the prompt, Codex output, gate results, diff summary, and run report.
+- a fresh git worktree
+- configured required or optional gates
+- deterministic checks on changed files, diff size, task scope, sensitive paths, and test weakening
+- run artifacts under `.agent/runs/<run_id>/`
+- a progress/state record for manual follow-up
 
-## v2
+## What It Does Today
 
-v2 adds a deterministic verifier after gates. It does not use an LLM reviewer.
+Implemented through v6:
 
-The verifier checks:
+- v0 deterministic loop skeleton
+- v0.5 sample target repo smoke test
+- v1 optional Codex implementer
+- v2 deterministic verifier
+- v2.5 constraints and task docs
+- v3 task spec file support
+- v4 task spec guardrails
+- v5 local skills
+- v6 named gates and diff reporting
 
-- gate results
-- changed file count against `max_changed_files`
-- diff line count against `max_diff_lines`
-- touched `human_required_paths`
-- task spec `Allowed files` and `Forbidden files`
-- simple test weakening signals, including deleted files under `tests/`, removed assertions in test files, and added skip markers
+Current capabilities:
 
-Each run writes `.agent/runs/<run_id>/verifier_result.json` with the verifier decision, reasons, warnings, changed files, diff size, human-required paths touched, task guardrail matches, and whether tests appear weakened or deleted.
+- Manual CLI trigger with `--task` or `--task-file`.
+- Safe default implementer: `--implementer none`.
+- Optional one-shot Codex implementer: `--implementer codex`.
+- Local skill playbooks selected explicitly with `--skill`.
+- Git worktree isolation under the configured worktree base path.
+- Required and optional named gates.
+- Diff summary including tracked stats and untracked files.
+- Deterministic verifier results written as JSON.
+- Human review boundary after every run.
 
-The final run status is passed only when gates and the verifier both pass. v2 keeps verification deterministic.
+## How The Loop Works
 
-## v2.5
+1. Read `.agent/config.yaml`.
+2. Load the inline task or Markdown task spec.
+3. Load an explicitly selected local skill, if `--skill` is provided.
+4. Create `.agent/runs/<run_id>/`.
+5. Create a git worktree for the configured target repo.
+6. Run the selected implementer. The default `none` makes no code changes; `codex` runs `codex exec` once inside the worktree.
+7. Run configured gates from the worktree.
+8. Run the deterministic verifier.
+9. Write audit artifacts and update `.agent/state.json` and `PROGRESS.md`.
+10. Stop for human review.
 
-v2.5 adds lightweight repo guidance, not a platform:
+## Basic Dry Run
 
-- `CONSTRAINTS.md` stores stable project constraints future runs should read.
-- `docs/LOOP_SELECTION.md` explains which tasks should become loops.
-- `docs/TASK_SPEC_TEMPLATE.md` is a small template for future task specs.
-- Codex implementer prompts include `AGENTS.md` and `CONSTRAINTS.md` when those files exist.
+From the repo root:
 
-This is not a scheduler, PR bot, swarm, autonomous deployment system, Docker setup, GitHub Actions workflow, MCP connector, skills system, or LLM verifier.
+```bash
+cd ~/coding-projects/agent-loop-factory
+python3 scripts/run_agent_loop.py --task "test task description" --dry-run
+```
 
-## v3
+This creates a run record and planned artifacts without creating a git worktree or executing gates.
 
-v3 adds structured task specs: written Markdown job orders that can be passed with `--task-file`. Inline `--task` still works, and every run writes the task order to `.agent/runs/<run_id>/task_spec.md`.
+## Common Commands
 
-Use `docs/TASK_SPEC_TEMPLATE.md` for new specs. A sample is available at `tasks/fix-sample-add.md`.
+Inline task with the safe default implementer:
 
-## v4
+```bash
+python3 scripts/run_agent_loop.py --task "Fix the failing test."
+```
 
-v4 enforces simple task spec guardrails in the deterministic verifier. Markdown task specs may include:
+The same command with the default made explicit:
+
+```bash
+python3 scripts/run_agent_loop.py --task "Fix the failing test." --implementer none
+```
+
+Task spec file:
+
+```bash
+python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md
+```
+
+Task spec with a local skill:
+
+```bash
+python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --skill failing-test-fix
+```
+
+Task spec with the Codex implementer:
+
+```bash
+python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --skill failing-test-fix --implementer codex
+```
+
+## Sample Target Repo Smoke Test
+
+Create a tiny failing target repo next to this repo:
+
+```bash
+cd ~/coding-projects/agent-loop-factory
+python3 scripts/create_sample_target_repo.py --failing
+```
+
+Temporarily point `.agent/config.yaml` at it:
+
+```yaml
+target_repo_path: "../sample-target-repo"
+worktree_base_path: "../agent-worktrees"
+allowed_commands:
+  - "python3 -m unittest discover -s tests"
+gates:
+  - name: unit tests
+    command: "python3 -m unittest discover -s tests"
+    required: true
+```
+
+Run the proven sample task:
+
+```bash
+python3 scripts/run_agent_loop.py \
+  --task-file tasks/fix-sample-add.md \
+  --skill failing-test-fix \
+  --implementer codex
+```
+
+See [docs/SMOKE_TEST_WALKTHROUGH.md](docs/SMOKE_TEST_WALKTHROUGH.md) for artifact checks and cleanup commands.
+
+## Task Specs
+
+A task spec is a Markdown job order passed with `--task-file`. Inline `--task` still works, but file-backed specs enable guardrails.
+
+Use [docs/TASK_SPEC_TEMPLATE.md](docs/TASK_SPEC_TEMPLATE.md) as the starting shape:
+
+```markdown
+## Goal
+
+## Scope
+
+## Out of scope
+
+## Allowed files
+
+## Forbidden files
+
+## Gates
+
+## Stop condition
+```
+
+Every run writes the effective task body to `.agent/runs/<run_id>/task_spec.md`.
+
+## Task Spec Guardrails
+
+For file-backed task specs, the verifier reads `Allowed files` and `Forbidden files` sections:
 
 ```markdown
 ## Allowed files
 
 - `sample_math/__init__.py`
-- `tests/`
+- `src/`
 
 ## Forbidden files
 
+- `tests/`
 - `pyproject.toml`
 ```
 
-If `Allowed files` is present, every changed target repo file must match one entry. Any changed file matching `Forbidden files` fails verification. Matching is intentionally simple: exact file match or directory prefix match for entries ending in `/`. Path separators are normalized to `/`; globbing is not implemented yet.
+If `Allowed files` is present, every changed target repo file must match an entry. Any changed file matching `Forbidden files` fails verification. Matching is intentionally simple: exact file match, or directory prefix match for entries ending in `/`. Globs are not implemented.
 
-Task specs are still intentionally simple Markdown. The parser finds those headings, reads bullet paths until the next heading, strips surrounding backticks, and otherwise leaves the task body untouched.
+Inline `--task` runs do not get task file guardrails.
 
-## v5
+## Local Skills
 
-v5 adds explicit repo-local skills. A skill is a reusable Markdown playbook stored at `skills/<skill_name>/SKILL.md` and included in the Codex prompt when selected with `--skill`.
+A local skill is a reusable Markdown playbook stored at:
 
-Skills are local repo playbooks, not auto-installed plugins. There is no skill auto-selection or marketplace.
+```text
+skills/<skill_name>/SKILL.md
+```
 
-v5 does not add scheduling, PR creation, GitHub automation, Docker, GitHub Actions, MCP/connectors, LLM verification, or parallel agents.
+Select one explicitly:
 
-## v6
+```bash
+python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --skill failing-test-fix --implementer codex
+```
 
-v6 makes gates and reports more inspectable while staying backward compatible.
+When selected, the skill is included in the Codex prompt and copied to `.agent/runs/<run_id>/skill.md`. Skills are repo-local playbooks only. There is no skill auto-selection, marketplace, plugin install flow, MCP connector, or remote skill source.
 
-String gates still work:
+## Named Gates
+
+String gates are still supported:
 
 ```yaml
 gates:
@@ -88,53 +201,28 @@ gates:
 Named gate objects are also supported:
 
 ```yaml
+allowed_commands:
+  - "python3 -m unittest discover -s tests"
+  - "ruff check ."
 gates:
   - name: unit tests
     command: "python3 -m unittest discover -s tests"
     required: true
+  - name: lint
+    command: "ruff check ."
+    required: false
 ```
 
-For string gates, `name` defaults to the command and `required` defaults to `true`. For object gates, `command` is required, `name` defaults to `command`, and `required` defaults to `true`. Required gate failures fail the run. Optional gate failures are recorded as warnings in `gate_results.json`, `verifier_result.json`, and `run_report.md`, but do not fail the run by themselves.
+Required gate failures fail the run. Optional gate failures are recorded as warnings in `gate_results.json`, `verifier_result.json`, and `run_report.md`, but do not fail the run by themselves. `allowed_commands` checks the command string, not the display name.
 
-`allowed_commands` still checks the gate command string, not the display name.
+Default gate detection is intentionally small:
 
-Diff summaries now include tracked diff stats and untracked files. An untracked-only change no longer reports `No diff.`.
+- Node/TypeScript: `npm test`, `npm run lint`, `npm run typecheck`
+- Python: `pytest`, `ruff check .`, `mypy .`
 
-## Run
+For a stdlib-only Python repo, configure `python3 -m unittest discover -s tests` explicitly.
 
-```bash
-python3 scripts/run_agent_loop.py --task "test task description"
-```
-
-This is equivalent to:
-
-```bash
-python3 scripts/run_agent_loop.py --task "test task description" --implementer none
-```
-
-Run with Codex:
-
-```bash
-python3 scripts/run_agent_loop.py --task "fix the failing test" --implementer codex
-```
-
-Run from a task spec:
-
-```bash
-python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --implementer codex
-```
-
-Run from a task spec with a local skill:
-
-```bash
-python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --skill failing-test-fix --implementer codex
-```
-
-Dry-run creates the run record and planned artifacts without creating a git worktree or running gates:
-
-```bash
-python3 scripts/run_agent_loop.py --task "test task description" --dry-run
-```
+## Artifacts
 
 Each run writes:
 
@@ -157,99 +245,45 @@ When `--implementer codex` is used, the run also writes:
 - `.agent/runs/<run_id>/codex_stderr.log`
 - `.agent/runs/<run_id>/codex_result.json`
 
-The orchestrator also updates `PROGRESS.md`.
+The orchestrator also updates `.agent/state.json` and `PROGRESS.md`.
 
-## v2.5 Smoke Test
+## Verifier Checks
 
-Create a tiny target repo with one intentionally failing unittest next to this repo:
+The deterministic verifier checks:
 
-```bash
-python3 scripts/create_sample_target_repo.py --failing
-```
+- required gate failures
+- optional gate failures as warnings
+- changed file count against `max_changed_files`
+- diff line count against `max_diff_lines`
+- touched `human_required_paths`
+- changed reserved artifact filenames inside the target repo
+- task spec `Allowed files` violations
+- task spec `Forbidden files` touches
+- simple test weakening signals: deleted files under `tests/`, removed assertions in test files, and added skip markers
 
-Point `.agent/config.yaml` at it and use the stdlib unittest gate:
-
-```yaml
-target_repo_path: "../sample-target-repo"
-worktree_base_path: "../agent-worktrees"
-allowed_commands:
-  - "python3 -m unittest discover -s tests"
-gates:
-  - "python3 -m unittest discover -s tests"
-```
-
-Run the loop without `--dry-run`:
-
-```bash
-python3 scripts/run_agent_loop.py --task "Fix the failing sample_math add test." --implementer codex
-```
-
-Or use the sample written job order:
-
-```bash
-python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --implementer codex
-```
-
-Confirm the output mentions a `run_id`, then check:
-
-```bash
-ls ../agent-worktrees
-ls .agent/runs/<run_id>/{run_report.md,gate_results.json,verifier_result.json,stdout.log,stderr.log,diff_summary.md,codex_prompt.md,codex_stdout.log,codex_stderr.log,codex_result.json}
-grep -F "# CONSTRAINTS.md" .agent/runs/<run_id>/codex_prompt.md
-grep -F "Keep the sample change small" .agent/runs/<run_id>/codex_prompt.md
-```
-
-Gates run after Codex, then the deterministic verifier runs. If Codex is unavailable, gates fail, or the verifier fails, the JSON artifacts and `run_report.md` include the reason and the loop stops without pushing, merging, deploying, or opening a PR.
-
-## Config
-
-Edit `.agent/config.yaml` to point at a future target repo:
-
-```yaml
-target_repo_path: "../some-target-repo"
-worktree_base_path: "../agent-worktrees"
-implementer: "none"
-codex_command: "codex"
-codex_exec_args: []
-```
-
-Default gates are detected from the target repo:
-
-- Node/TypeScript: `npm test`, `npm run lint`, `npm run typecheck`
-- Python: `pytest`, `ruff check .`, `mypy .`
-
-For a stdlib-only Python repo, set `allowed_commands` and `gates` to `python3 -m unittest discover -s tests`.
-
-Use a named gate when the command is noisy or when a gate should be optional:
-
-```yaml
-allowed_commands:
-  - "python3 -m unittest discover -s tests"
-  - "ruff check ."
-gates:
-  - name: unit tests
-    command: "python3 -m unittest discover -s tests"
-  - name: lint
-    command: "ruff check ."
-    required: false
-```
-
-Unavailable commands are warnings in the run report, not crashes.
+The final run status passes only when worktree creation, the selected implementer, required gates, and the verifier pass.
 
 ## Safety Boundaries
 
-v4 keeps hard limits in config, enforces them in the verifier, and repeats them in the Codex prompt:
+Current safety boundaries are local and deterministic:
 
-- `max_iterations`
-- `max_changed_files`
-- `max_diff_lines`
-- `allowed_commands`
-- `human_required_paths`
-- `implementer: "none"`
-- `auto_merge: false`
-- `auto_deploy: false`
+- Manual trigger only.
+- Isolated git worktree per run.
+- Default implementer is `none`.
+- Codex runs only when explicitly selected.
+- Gates must appear in `allowed_commands`.
+- Sensitive paths are listed in `human_required_paths`.
+- Task spec file guardrails can restrict allowed and forbidden files.
+- `auto_merge: false` and `auto_deploy: false` are fixed safety expectations, not implemented automation switches.
+- The loop stops after writing artifacts for human review.
 
-Codex is told to make the smallest change, avoid weakening tests, avoid sensitive paths without approval, stop after editing files, and not claim success. The prompt also includes the task spec, selected skill if any, plus `AGENTS.md` and `CONSTRAINTS.md` when present. Gates plus the deterministic verifier decide success.
+The Codex prompt includes the task, selected skill, configured safety limits, `AGENTS.md`, and `CONSTRAINTS.md` when present. Gates and the deterministic verifier decide run success; the implementer does not.
+
+## Roadmap
+
+See [docs/ROADMAP.md](docs/ROADMAP.md).
+
+Planned items are not implemented unless listed above. The next recommended milestone is v7 human review bundle generation, not autonomous merge or deployment.
 
 ## Troubleshooting
 
@@ -259,8 +293,4 @@ If Codex is not installed or not on `PATH`, runs with `--implementer codex` writ
 - `.agent/runs/<run_id>/codex_stderr.log`
 - `.agent/runs/<run_id>/run_report.md`
 
-Set `codex_command` if your executable has a different name or path.
-
-## Roadmap
-
-- v6: manual and local; no scheduler, PR bot, swarm, LLM verifier, Docker, GitHub Actions, draft PRs, push, merge, deploy, publish, MCP, connectors, parallel agents, skill auto-selection, or skill marketplace.
+Set `codex_command` in `.agent/config.yaml` if the executable has a different name or path.
