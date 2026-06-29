@@ -15,6 +15,7 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - v6 named gates and diff reporting
 - v6.1 docs and roadmap cleanup
 - v7 human review bundle
+- v8 draft PR handoff package
 
 ## Current Capabilities
 
@@ -30,22 +31,23 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - Required and optional gate results.
 - Deterministic verifier for gates, diff size, changed files, human-required paths, task guardrails, reserved artifacts, and simple test weakening signals.
 - Human-readable `review_bundle.md` with checklist and conservative recommendation.
+- Local draft PR handoff artifacts: `pr_title.txt`, `pr_body.md`, `pr_commands.md`, and `pr_handoff.md`.
 - Run artifacts under `.agent/runs/<run_id>/`.
 - Human review boundary after every run.
 
 ## Next Recommended Milestone
 
-v8 draft PR support, no auto-merge.
+v8.1 optional explicit local `gh` draft PR creation, still no auto-merge.
 
 ## Future Milestones
 
-- v8 draft PR support, no auto-merge
+- v8.1 optional explicit local gh draft PR creation, still no auto-merge
 - v9 GitHub issue / CI trigger support
-- v10 optional LLM reviewer
+- v10 optional LLM reviewer or PR review integration
 - v11 scheduler / recurring runs
 - v12 multi-agent or parallel execution
 
-These are planned milestones. They are not implemented in v7.
+These are planned milestones. They are not implemented in v8.
 
 ## Explicit Non-Goals
 

@@ -76,6 +76,10 @@ run_dir=/home/mikestryke/coding-projects/agent-loop-factory/.agent/runs/<run_id>
 ls .agent/runs/<run_id>
 sed -n '1,220p' .agent/runs/<run_id>/run_report.md
 sed -n '1,260p' .agent/runs/<run_id>/review_bundle.md
+cat .agent/runs/<run_id>/pr_title.txt
+sed -n '1,220p' .agent/runs/<run_id>/pr_body.md
+sed -n '1,220p' .agent/runs/<run_id>/pr_commands.md
+sed -n '1,120p' .agent/runs/<run_id>/pr_handoff.md
 cat .agent/runs/<run_id>/gate_results.json
 cat .agent/runs/<run_id>/verifier_result.json
 sed -n '1,220p' .agent/runs/<run_id>/diff_summary.md
@@ -87,6 +91,10 @@ Expected artifacts include:
 
 - `run_report.md`
 - `review_bundle.md`
+- `pr_title.txt`
+- `pr_body.md`
+- `pr_commands.md`
+- `pr_handoff.md`
 - `gate_results.json`
 - `verifier_result.json`
 - `diff_summary.md`

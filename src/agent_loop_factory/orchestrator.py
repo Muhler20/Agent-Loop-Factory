@@ -10,6 +10,7 @@ from pathlib import Path
 from .codex_implementer import run_codex_implementer, write_codex_skip
 from .config import load_config
 from .create_worktree import create_worktree
+from .pr_handoff import write_pr_handoff
 from .run_gates import run_gates
 from .review_bundle import write_review_bundle
 from .skill import Skill
@@ -71,6 +72,7 @@ def run(
     ok = worktree.ok and implementer_ok and gates_ok and bool(verifier_result["ok"])
 
     review_recommendation, _ = write_review_bundle(run_dir, run_id, task_spec, skill, selected_implementer, worktree, gates, verifier_result, diff_summary, ok)
+    write_pr_handoff(run_dir, run_id, task_spec, skill, worktree, gates, verifier_result, review_recommendation)
     report = _report(task_spec, skill, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, verifier_result, diff_summary, ok, review_recommendation)
     (run_dir / "run_report.md").write_text(report)
     _update_state(agent_dir / "state.json", run_id, ok)
@@ -183,6 +185,14 @@ Task forbidden touched:
 
 - path: .agent/runs/{run_id}/review_bundle.md
 - recommendation: {review_recommendation}
+
+## Draft PR Handoff
+
+- pr_title: .agent/runs/{run_id}/pr_title.txt
+- pr_body: .agent/runs/{run_id}/pr_body.md
+- pr_commands: .agent/runs/{run_id}/pr_commands.md
+- pr_handoff: .agent/runs/{run_id}/pr_handoff.md
+- no commands executed: true
 
 ## Codex Implementer
 

@@ -15,7 +15,7 @@ Agent Loop Factory is a supervised local control loop for software-agent coding 
 7. The selected implementer runs. The default is `none`; `codex` runs once when requested.
 8. Configured gates run in the worktree.
 9. The deterministic verifier inspects gates, diff size, changed files, task guardrails, sensitive paths, and test weakening signals.
-10. Artifacts are written, progress/state files are updated, and the loop stops.
+10. Artifacts and local draft PR handoff files are written, progress/state files are updated, and the loop stops.
 
 ## Core Components
 
@@ -57,7 +57,7 @@ The verifier is deterministic. It checks required gate results, changed file cou
 
 ### Artifacts
 
-Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.md`, `review_bundle.md`, `gate_results.json`, `verifier_result.json`, logs, `diff_summary.md`, and `task_spec.md`. Skill and Codex artifacts are written only when those features are used.
+Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `gate_results.json`, `verifier_result.json`, logs, `diff_summary.md`, and `task_spec.md`. Skill and Codex artifacts are written only when those features are used.
 
 ### Progress and State Memory
 
@@ -65,7 +65,7 @@ Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.m
 
 ### Human Review Boundary
 
-The loop stops after artifacts are written. `review_bundle.md` collects the diff summary, gates, verifier result, task guardrails, and checklist for the human decision. It is a review aid only; it does not approve, merge, push, open PRs, or deploy.
+The loop stops after artifacts are written. `review_bundle.md` collects the diff summary, gates, verifier result, task guardrails, and checklist for the human decision. The draft PR handoff files provide a local title, body, and suggested manual commands. They are review aids only; Agent Loop Factory does not commit, push, open PRs, approve, merge, or deploy.
 
 ## Current Implemented System Through v7
 
@@ -79,6 +79,7 @@ The loop stops after artifacts are written. `review_bundle.md` collects the diff
 - v5 local skills
 - v6 named gates and diff reporting
 - v7 human review bundle
+- v8 local draft PR handoff package
 
 ## Intentionally Not Implemented Yet
 
@@ -98,12 +99,13 @@ The safety model is local, supervised, and deterministic:
 - Hard limits for changed files and diff lines.
 - Deterministic verifier decides pass/fail.
 - Human review before any merge, deploy, release, or external publication.
+- Draft PR handoff is local text generation only.
 
 ## Future Roadmap
 
-- v8 draft PR support, no auto-merge
+- v8.1 optional explicit local gh draft PR creation, still no auto-merge
 - v9 GitHub issue / CI trigger support
-- v10 optional LLM reviewer
+- v10 optional LLM reviewer or PR review integration
 - v11 scheduler / recurring runs
 - v12 multi-agent or parallel execution
 

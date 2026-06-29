@@ -80,6 +80,16 @@ class VerifierTests(unittest.TestCase):
             self.assertIn("reserved run artifact file changed in target repo: gate_results.json", result["reasons"])
             self.assertIn("reserved run artifact file changed in target repo: verifier_result.json", result["reasons"])
 
+    def test_fails_when_pr_handoff_artifacts_are_created_in_target_repo(self) -> None:
+        with repo() as tmp:
+            (tmp / "pr_body.md").write_text("body\n")
+            (tmp / "pr_commands.md").write_text("commands\n")
+            result = verify(tmp)
+            self.assertFalse(result["ok"])
+            self.assertEqual(result["reserved_artifacts_touched"], ["pr_body.md", "pr_commands.md"])
+            self.assertIn("reserved run artifact file changed in target repo: pr_body.md", result["reasons"])
+            self.assertIn("reserved run artifact file changed in target repo: pr_commands.md", result["reasons"])
+
     def test_fails_when_human_required_paths_are_touched(self) -> None:
         with repo() as tmp:
             (tmp / "auth").mkdir()

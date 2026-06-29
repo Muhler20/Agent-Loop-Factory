@@ -2,7 +2,7 @@
 
 `agent-loop-factory` is a supervised software-agent control loop for local coding-agent runs. It creates an isolated git worktree for a target repository, optionally asks Codex to make one small change, runs configured gates, verifies the resulting diff deterministically, writes audit artifacts, and stops for human review.
 
-It is not an autonomous coding platform. Through v6 it is local, manually triggered, and human-in-the-loop. It does not push, merge, deploy, open PRs, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, or connect to GitHub/MCP services.
+It is not an autonomous coding platform. Through v8 it is local, manually triggered, and human-in-the-loop. It does not push, merge, deploy, open PRs, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, or connect to GitHub/MCP services.
 
 ## What It Solves
 
@@ -233,6 +233,10 @@ Each run writes:
 - `.agent/runs/<run_id>/stderr.log`
 - `.agent/runs/<run_id>/diff_summary.md`
 - `.agent/runs/<run_id>/review_bundle.md`
+- `.agent/runs/<run_id>/pr_title.txt`
+- `.agent/runs/<run_id>/pr_body.md`
+- `.agent/runs/<run_id>/pr_commands.md`
+- `.agent/runs/<run_id>/pr_handoff.md`
 - `.agent/runs/<run_id>/task_spec.md`
 
 When `--skill` is used, the run also writes:
@@ -248,7 +252,9 @@ When `--implementer codex` is used, the run also writes:
 
 The orchestrator also updates `.agent/state.json` and `PROGRESS.md`.
 
-`review_bundle.md` is the human review artifact. It collects the task, skill, changed files, gates, verifier result, diff summary, checklist, and a conservative recommendation such as `ready_for_human_review`, `manual_review_required`, or `reject_or_rework`. It exists to make the pre-PR review step easier before draft PR support is added. It does not approve, merge, push, open PRs, or deploy.
+`review_bundle.md` is the human review artifact. It collects the task, skill, changed files, gates, verifier result, diff summary, checklist, and a conservative recommendation such as `ready_for_human_review`, `manual_review_required`, or `reject_or_rework`.
+
+The draft PR handoff package is local only. `pr_title.txt`, `pr_body.md`, and `pr_commands.md` prepare a human to inspect the worktree and optionally commit, push, and create a draft PR manually. Agent Loop Factory writes these suggestions after `review_bundle.md`, but it does not run `git commit`, `git push`, `gh pr create`, merge, or deploy. Review the diff, gates, verifier result, and changed files before using anything in `pr_commands.md`. Future draft PR automation can build on these artifacts without changing the current human review boundary.
 
 ## Verifier Checks
 
@@ -279,6 +285,7 @@ Current safety boundaries are local and deterministic:
 - Task spec file guardrails can restrict allowed and forbidden files.
 - `auto_merge: false` and `auto_deploy: false` are fixed safety expectations, not implemented automation switches.
 - The loop stops after writing artifacts for human review.
+- Draft PR handoff commands are written as text only; they are not executed.
 
 The Codex prompt includes the task, selected skill, configured safety limits, `AGENTS.md`, and `CONSTRAINTS.md` when present. Gates and the deterministic verifier decide run success; the implementer does not.
 
@@ -286,7 +293,7 @@ The Codex prompt includes the task, selected skill, configured safety limits, `A
 
 See [docs/ROADMAP.md](docs/ROADMAP.md).
 
-Planned items are not implemented unless listed above. The current implemented milestone is v7 human review bundle generation, not autonomous merge or deployment.
+Planned items are not implemented unless listed above. The current implemented milestone is v8 local draft PR handoff generation, not autonomous PR creation, merge, or deployment.
 
 ## Troubleshooting
 

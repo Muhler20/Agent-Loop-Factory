@@ -129,6 +129,14 @@ def build_review_bundle(
 
 - recommendation: {decision}
 - reason: {reason}
+
+## Draft PR Handoff
+
+- pr_title.txt
+- pr_body.md
+- pr_commands.md
+- pr_handoff.md
+- No push or PR creation was performed.
 """
 
 
