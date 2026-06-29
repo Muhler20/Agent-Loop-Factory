@@ -142,7 +142,7 @@ def _gates(gates: list[dict[str, object]]) -> str:
                 f"  command: {_value(gate.get('command'))}",
                 f"  required: {_value(gate.get('required', True))}",
                 f"  result: {'ok' if gate.get('ok') else 'not ok'}",
-                f"  warning: {_value(gate.get('warning'))}",
+                f"  warning: {_warning(gate.get('warning'))}",
             ]
         )
         for gate in gates
@@ -157,3 +157,7 @@ def _value(value: object) -> str:
     if isinstance(value, bool):
         return str(value).lower()
     return "Unavailable" if value is None else str(value)
+
+
+def _warning(value: object) -> str:
+    return str(value) if value else "None"

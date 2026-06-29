@@ -78,6 +78,27 @@ class ReviewBundleTests(unittest.TestCase):
         self.assertIn("- skill name: None", bundle)
         self.assertIn("- skill file path: None", bundle)
 
+    def test_gate_warnings_render_none_when_blank(self) -> None:
+        bundle = build_review_bundle(
+            "run-1",
+            TaskSpec("Inline task", "Inline task"),
+            None,
+            "none",
+            SimpleNamespace(path=None, branch=None),
+            [
+                {"name": "null", "command": "true", "ok": True, "warning": None},
+                {"name": "missing", "command": "true", "ok": True},
+                {"name": "empty", "command": "true", "ok": True, "warning": ""},
+                {"name": "present", "command": "true", "ok": True, "warning": "slow"},
+            ],
+            verifier_result(),
+            "",
+            True,
+        )
+
+        self.assertEqual(bundle.count("warning: None"), 3)
+        self.assertIn("warning: slow", bundle)
+
     def test_recommendation_verifier_failure_rejects(self) -> None:
         self.assertEqual(recommendation(verifier_result(ok=False, reasons=["bad"]), []), ("reject_or_rework", "verifier failed"))
 
