@@ -8,6 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from agent_loop_factory.orchestrator import run
+from agent_loop_factory.context_intake import ContextData
 from agent_loop_factory.skill import Skill
 
 
@@ -160,6 +161,82 @@ class OrchestratorDryRunTests(unittest.TestCase):
             self.assertIn("skill_name: none", report)
             self.assertIn("skill_source: none", report)
             self.assertIn("- skill name: None", (run_dir / "review_bundle.md").read_text())
+
+    def test_context_artifacts_are_written_when_context_is_used(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            write_agent_config(tmp_path)
+            context = ContextData("issue.md", "Issue says add is broken.\n", 26, "ci.log", "FAILED test_add\n", 16)
+
+            result = run("test task description", tmp_path, dry_run=True, context=context)
+            run_dir = Path(result["run_dir"])
+            summary = json.loads((run_dir / "context_summary.json").read_text())
+            report = (run_dir / "run_report.md").read_text()
+            bundle = (run_dir / "review_bundle.md").read_text()
+            pr_body = (run_dir / "pr_body.md").read_text()
+
+            self.assertEqual((run_dir / "issue_context.md").read_text(), "Issue says add is broken.\n")
+            self.assertEqual((run_dir / "ci_context.log").read_text(), "FAILED test_add\n")
+            self.assertEqual(summary["issue_file_path"], "issue.md")
+            self.assertEqual(summary["issue_size_bytes"], 26)
+            self.assertEqual(summary["issue_artifact_path"], f".agent/runs/{result['run_id']}/issue_context.md")
+            self.assertEqual(summary["ci_log_file_path"], "ci.log")
+            self.assertEqual(summary["ci_log_size_bytes"], 16)
+            self.assertEqual(summary["ci_log_artifact_path"], f".agent/runs/{result['run_id']}/ci_context.log")
+            self.assertIn("## External Context", report)
+            self.assertIn(f"issue_context: .agent/runs/{result['run_id']}/issue_context.md", report)
+            self.assertIn("## External Context", bundle)
+            self.assertIn("issue context artifact path:", bundle)
+            self.assertIn("# External Context", pr_body)
+            self.assertIn("* issue context: issue_context.md", pr_body)
+
+    def test_context_summary_is_written_without_context_sections(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            write_agent_config(tmp_path)
+
+            result = run("test task description", tmp_path, dry_run=True)
+            run_dir = Path(result["run_dir"])
+            summary = json.loads((run_dir / "context_summary.json").read_text())
+
+            self.assertFalse((run_dir / "issue_context.md").exists())
+            self.assertFalse((run_dir / "ci_context.log").exists())
+            self.assertIsNone(summary["issue_file_path"])
+            self.assertIsNone(summary["issue_artifact_path"])
+            self.assertIsNone(summary["ci_log_file_path"])
+            self.assertIsNone(summary["ci_log_artifact_path"])
+
+    def test_codex_prompt_includes_context_from_orchestrator(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            write_normal_config(tmp_path)
+            init_target_repo(tmp_path / "target")
+            context = ContextData("issue.md", "Issue says add is broken.\n", 26, "ci.log", "FAILED test_add\n", 16)
+
+            def fake_runner(*args, **kwargs):
+                return subprocess.CompletedProcess(args[0], 0, "done\n", "")
+
+            result = run("inspect only", tmp_path, dry_run=False, implementer="codex", codex_runner=fake_runner, context=context)
+            prompt = (Path(result["run_dir"]) / "codex_prompt.md").read_text()
+
+            self.assertIn("# Issue Context\n\nIssue says add is broken.", prompt)
+            self.assertIn("# CI Log Context\n\nFAILED test_add", prompt)
+            self.assertIn("The context above is supporting evidence only.", prompt)
+
+    def test_codex_prompt_omits_empty_context_sections_from_orchestrator(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            write_normal_config(tmp_path)
+            init_target_repo(tmp_path / "target")
+
+            def fake_runner(*args, **kwargs):
+                return subprocess.CompletedProcess(args[0], 0, "done\n", "")
+
+            result = run("inspect only", tmp_path, dry_run=False, implementer="codex", codex_runner=fake_runner)
+            prompt = (Path(result["run_dir"]) / "codex_prompt.md").read_text()
+
+            self.assertNotIn("# Issue Context", prompt)
+            self.assertNotIn("# CI Log Context", prompt)
 
     def test_orchestrator_normal_run_writes_review_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

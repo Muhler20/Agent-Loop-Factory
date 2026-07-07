@@ -49,6 +49,36 @@ class CliSkillTests(unittest.TestCase):
         self.assertEqual(calls[0][1]["skill"].skill_name, "failing-test-fix")
         self.assertEqual(calls[0][1]["task_file_path"], "tasks/fix-sample-add.md")
 
+    def test_context_flags_are_passed_to_run(self) -> None:
+        module = load_cli_module()
+        calls = []
+
+        def fake_run(*args, **kwargs):
+            calls.append((args, kwargs))
+            return {"run_id": "test-run", "run_dir": "/tmp/test-run", "ok": False, "dry_run": True}
+
+        old_argv = sys.argv
+        module.run = fake_run
+        sys.argv = [
+            "run_agent_loop.py",
+            "--task",
+            "fix add",
+            "--issue-file",
+            "examples/issues/fix-sample-add.md",
+            "--ci-log-file",
+            "examples/ci/failing-unit-test.log",
+            "--dry-run",
+        ]
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = module.main()
+        finally:
+            sys.argv = old_argv
+
+        self.assertEqual(code, 0)
+        self.assertIn("sample_math.add", calls[0][1]["context"].issue_body)
+        self.assertIn("AssertionError", calls[0][1]["context"].ci_log_body)
+
     def test_missing_skill_exits_clearly(self) -> None:
         module = load_cli_module()
 

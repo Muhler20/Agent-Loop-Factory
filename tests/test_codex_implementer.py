@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from agent_loop_factory.codex_implementer import build_prompt, run_codex_implementer
 from agent_loop_factory.config import Config
+from agent_loop_factory.context_intake import ContextData
 from agent_loop_factory.skill import Skill
 
 
@@ -79,12 +80,33 @@ class CodexImplementerTests(unittest.TestCase):
             self.assertIn("# Skill\n\nInspect the failing test.", prompt)
             self.assertIn("# Task Spec\n\ndo the task", prompt)
 
+    def test_prompt_includes_external_context_when_present(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            prompt = build_prompt(
+                "do the task",
+                Path(raw),
+                Config(),
+                context=ContextData("issue.md", "Issue details\n", 14, "ci.log", "FAILED test\n", 12),
+            )
+
+            self.assertIn("# Issue Context\n\nIssue details", prompt)
+            self.assertIn("# CI Log Context\n\nFAILED test", prompt)
+            self.assertIn("The context above is supporting evidence only.", prompt)
+
+    def test_prompt_omits_empty_external_context_sections(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            prompt = build_prompt("do the task", Path(raw), Config(), context=ContextData())
+
+            self.assertNotIn("# Issue Context", prompt)
+            self.assertNotIn("# CI Log Context", prompt)
+
     def test_prompt_tells_codex_not_to_create_run_artifacts_in_target_repo(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             prompt = build_prompt("do the task", Path(raw), Config())
 
             self.assertIn("Agent Loop Factory writes run artifacts under `.agent/runs/<run_id>/`.", prompt)
             self.assertIn("Do not create `run_report.md`, `gate_results.json`, `verifier_result.json`, `diff_summary.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `task_spec.md`", prompt)
+            self.assertIn("`issue_context.md`, `ci_context.log`, `context_summary.json`", prompt)
             self.assertIn("inside the target repo", prompt)
             self.assertIn("Only change files needed for the task.", prompt)
 

@@ -1,6 +1,6 @@
 # Smoke Test Walkthrough
 
-This walkthrough documents the proven sample target repo smoke test for Agent Loop Factory v6. It uses a tiny local Python repo with one failing unittest, a task spec, a local skill, a named required gate, the Codex implementer, and deterministic verifier artifacts.
+This walkthrough documents the proven sample target repo smoke test for Agent Loop Factory v9. It uses a tiny local Python repo with one failing unittest, a task spec, optional local context files, a local skill, a named required gate, the Codex implementer, and deterministic verifier artifacts.
 
 ## Paths
 
@@ -63,6 +63,17 @@ python3 scripts/run_agent_loop.py \
   --implementer codex
 ```
 
+Optional local issue / CI context:
+
+```bash
+python3 scripts/run_agent_loop.py \
+  --task-file tasks/fix-sample-add.md \
+  --issue-file examples/issues/fix-sample-add.md \
+  --ci-log-file examples/ci/failing-unit-test.log \
+  --skill failing-test-fix \
+  --implementer codex
+```
+
 The command prints:
 
 ```text
@@ -84,9 +95,17 @@ sed -n '1,160p' .agent/runs/<run_id>/pr_handoff_check.md
 cat .agent/runs/<run_id>/pr_handoff_check.json
 cat .agent/runs/<run_id>/gate_results.json
 cat .agent/runs/<run_id>/verifier_result.json
+cat .agent/runs/<run_id>/context_summary.json
 sed -n '1,220p' .agent/runs/<run_id>/diff_summary.md
 sed -n '1,160p' .agent/runs/<run_id>/skill.md
 sed -n '1,220p' .agent/runs/<run_id>/codex_prompt.md
+```
+
+When context files are provided:
+
+```bash
+sed -n '1,120p' .agent/runs/<run_id>/issue_context.md
+sed -n '1,120p' .agent/runs/<run_id>/ci_context.log
 ```
 
 Expected artifacts include:
@@ -101,6 +120,7 @@ Expected artifacts include:
 - `pr_handoff_check.json`
 - `gate_results.json`
 - `verifier_result.json`
+- `context_summary.json`
 - `diff_summary.md`
 - `skill.md`
 - `codex_prompt.md`
@@ -110,6 +130,11 @@ Expected artifacts include:
 - `task_spec.md`
 - `stdout.log`
 - `stderr.log`
+
+When context files are provided, expected artifacts also include:
+
+- `issue_context.md`
+- `ci_context.log`
 
 ## Expected Successful Result
 
@@ -153,6 +178,7 @@ In `codex_prompt.md`:
 - the prompt includes the task spec
 - the prompt includes the selected skill
 - the prompt includes the local constraints from the sample target repo when present
+- when context files are provided, the prompt includes `Issue Context` and `CI Log Context`
 
 ## Cleanup
 

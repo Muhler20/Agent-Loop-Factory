@@ -2,7 +2,7 @@
 
 `agent-loop-factory` is a supervised software-agent control loop for local coding-agent runs. It creates an isolated git worktree for a target repository, optionally asks Codex to make one small change, runs configured gates, verifies the resulting diff deterministically, writes audit artifacts, and stops for human review.
 
-It is not an autonomous coding platform. Through v8 it is local, manually triggered, and human-in-the-loop. It does not push, merge, deploy, open PRs, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, or connect to GitHub/MCP services.
+It is not an autonomous coding platform. Through v9 it is local, manually triggered, and human-in-the-loop. It does not push, merge, deploy, open PRs, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, or connect to GitHub/MCP services.
 
 ## What It Solves
 
@@ -16,7 +16,7 @@ Agent Loop Factory is for small, repeatable coding tasks where the target repo h
 
 ## What It Does Today
 
-Implemented through v6:
+Implemented through v9:
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -27,6 +27,10 @@ Implemented through v6:
 - v4 task spec guardrails
 - v5 local skills
 - v6 named gates and diff reporting
+- v7 human review bundle
+- v8 local draft PR handoff package
+- v8.1 PR handoff validation
+- v9 local issue / CI context intake
 
 Current capabilities:
 
@@ -34,6 +38,7 @@ Current capabilities:
 - Safe default implementer: `--implementer none`.
 - Optional one-shot Codex implementer: `--implementer codex`.
 - Local skill playbooks selected explicitly with `--skill`.
+- Optional local issue and CI log context files with `--issue-file` and `--ci-log-file`.
 - Git worktree isolation under the configured worktree base path.
 - Required and optional named gates.
 - Diff summary including tracked stats and untracked files.
@@ -44,14 +49,15 @@ Current capabilities:
 
 1. Read `.agent/config.yaml`.
 2. Load the inline task or Markdown task spec.
-3. Load an explicitly selected local skill, if `--skill` is provided.
-4. Create `.agent/runs/<run_id>/`.
-5. Create a git worktree for the configured target repo.
-6. Run the selected implementer. The default `none` makes no code changes; `codex` runs `codex exec` once inside the worktree.
-7. Run configured gates from the worktree.
-8. Run the deterministic verifier.
-9. Write audit artifacts and update `.agent/state.json` and `PROGRESS.md`.
-10. Stop for human review.
+3. Load optional local context files from `--issue-file` and `--ci-log-file`.
+4. Load an explicitly selected local skill, if `--skill` is provided.
+5. Create `.agent/runs/<run_id>/`.
+6. Create a git worktree for the configured target repo.
+7. Run the selected implementer. The default `none` makes no code changes; `codex` runs `codex exec` once inside the worktree.
+8. Run configured gates from the worktree.
+9. Run the deterministic verifier.
+10. Write audit artifacts and update `.agent/state.json` and `PROGRESS.md`.
+11. Stop for human review.
 
 ## Basic Dry Run
 
@@ -90,11 +96,27 @@ Task spec with a local skill:
 python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --skill failing-test-fix
 ```
 
+Task spec with local issue and CI context:
+
+```bash
+python3 scripts/run_agent_loop.py \
+  --task-file tasks/fix-sample-add.md \
+  --issue-file examples/issues/fix-sample-add.md \
+  --ci-log-file examples/ci/failing-unit-test.log \
+  --skill failing-test-fix
+```
+
 Task spec with the Codex implementer:
 
 ```bash
 python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --skill failing-test-fix --implementer codex
 ```
+
+## Local Issue / CI Context
+
+`--issue-file PATH` and `--ci-log-file PATH` attach local text files as supporting evidence for the run. They do not replace the task spec, and they do not expand scope. The task spec, allowed files, forbidden files, constraints, gates, and human-review rules still control the run.
+
+Context intake is local-only. Agent Loop Factory reads the provided files from disk as UTF-8 text, validates that they are non-empty files under a fixed size limit, writes run artifacts, and does not contact GitHub, GitHub Actions, webhooks, `gh`, or any network service.
 
 ## Sample Target Repo Smoke Test
 
@@ -245,6 +267,15 @@ When `--skill` is used, the run also writes:
 
 - `.agent/runs/<run_id>/skill.md`
 
+Every run writes:
+
+- `.agent/runs/<run_id>/context_summary.json`
+
+When `--issue-file` or `--ci-log-file` is used, the run also writes:
+
+- `.agent/runs/<run_id>/issue_context.md`
+- `.agent/runs/<run_id>/ci_context.log`
+
 When `--implementer codex` is used, the run also writes:
 
 - `.agent/runs/<run_id>/codex_prompt.md`
@@ -295,7 +326,7 @@ The Codex prompt includes the task, selected skill, configured safety limits, `A
 
 See [docs/ROADMAP.md](docs/ROADMAP.md).
 
-Planned items are not implemented unless listed above. The current implemented milestone is v8 local draft PR handoff generation, not autonomous PR creation, merge, or deployment.
+Planned items are not implemented unless listed above. The current implemented milestone is v9 local issue / CI context intake, not GitHub fetching, autonomous PR creation, merge, or deployment.
 
 ## Troubleshooting
 

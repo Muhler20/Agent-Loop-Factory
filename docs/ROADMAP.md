@@ -17,6 +17,7 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - v7 human review bundle
 - v8 draft PR handoff package
 - v8.1 PR handoff validation
+- v9 issue / CI context intake
 
 ## Current Capabilities
 
@@ -26,6 +27,7 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - Markdown task specs with `--task-file`.
 - Task spec allowed/forbidden file guardrails.
 - Explicit local skills with `--skill`.
+- Optional local issue and CI log context intake with `--issue-file` and `--ci-log-file`.
 - Safe default implementer `none`.
 - Optional one-shot Codex implementer with `--implementer codex`.
 - Configured string or named gates.
@@ -38,17 +40,16 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 
 ## Next Recommended Milestone
 
-v8.2 optional explicit local `gh` draft PR creation, still no auto-merge, only with explicit flag and confirmation.
+v9.1 optional explicit local GitHub fetch using `gh`, read-only, no PR creation.
 
 ## Future Milestones
 
-- v8.2 optional explicit local gh draft PR creation, still no auto-merge, only with explicit flag and confirmation
-- v9 GitHub issue / CI trigger support
+- v9.1 optional explicit local GitHub fetch using gh, read-only, no PR creation
 - v10 optional LLM reviewer or PR review integration
 - v11 scheduler / recurring runs
 - v12 multi-agent or parallel execution
 
-These are planned milestones. They are not implemented in v8.1.
+These are planned milestones. They are not implemented in v9.
 
 ## Explicit Non-Goals
 
@@ -59,6 +60,7 @@ Current Agent Loop Factory does not provide:
 - auto-merge
 - auto-deploy
 - GitHub integration
+- automatic issue or CI fetching
 - PR creation
 - scheduler support
 - parallel agents

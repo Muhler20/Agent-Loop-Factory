@@ -9,13 +9,14 @@ Agent Loop Factory is a supervised local control loop for software-agent coding 
 1. A human starts a run from the CLI.
 2. The orchestrator reads `.agent/config.yaml`.
 3. The task is loaded from `--task` or `--task-file`.
-4. An explicitly selected local skill is loaded, if provided.
-5. A run directory is created under `.agent/runs/<run_id>/`.
-6. A git worktree is created under the configured worktree base path.
-7. The selected implementer runs. The default is `none`; `codex` runs once when requested.
-8. Configured gates run in the worktree.
-9. The deterministic verifier inspects gates, diff size, changed files, task guardrails, sensitive paths, and test weakening signals.
-10. Artifacts and local draft PR handoff files are written, progress/state files are updated, and the loop stops.
+4. Optional local issue and CI log context files are loaded.
+5. An explicitly selected local skill is loaded, if provided.
+6. A run directory is created under `.agent/runs/<run_id>/`.
+7. A git worktree is created under the configured worktree base path.
+8. The selected implementer runs. The default is `none`; `codex` runs once when requested.
+9. Configured gates run in the worktree.
+10. The deterministic verifier inspects gates, diff size, changed files, task guardrails, sensitive paths, and test weakening signals.
+11. Artifacts and local draft PR handoff files are written, progress/state files are updated, and the loop stops.
 
 ## Core Components
 
@@ -34,6 +35,10 @@ The orchestrator coordinates a single run: config loading, task loading, worktre
 ### Task Spec
 
 An inline `--task` provides a simple task body. A Markdown `--task-file` provides a structured job order and can include `Allowed files` and `Forbidden files` guardrails.
+
+### Context Intake
+
+`--issue-file` and `--ci-log-file` load optional local UTF-8 text files as supporting evidence. They are copied to run artifacts and included in the Codex prompt when Codex is used. They do not replace the task spec, do not fetch remote data, and do not contact GitHub or any network service.
 
 ### Skill
 
@@ -57,7 +62,7 @@ The verifier is deterministic. It checks required gate results, changed file cou
 
 ### Artifacts
 
-Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `gate_results.json`, `verifier_result.json`, logs, `diff_summary.md`, and `task_spec.md`. Skill and Codex artifacts are written only when those features are used.
+Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `gate_results.json`, `verifier_result.json`, logs, `diff_summary.md`, `task_spec.md`, and `context_summary.json`. `issue_context.md` and `ci_context.log` are written when those context files are provided. Skill and Codex artifacts are written only when those features are used.
 
 ### Progress and State Memory
 
@@ -67,7 +72,7 @@ Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.m
 
 The loop stops after artifacts are written. `review_bundle.md` collects the diff summary, gates, verifier result, task guardrails, and checklist for the human decision. The draft PR handoff files provide a local title, body, suggested manual commands, and local-only handoff validation status. They are review aids only; Agent Loop Factory does not commit, push, open PRs, approve, merge, or deploy.
 
-## Current Implemented System Through v7
+## Current Implemented System Through v9
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -80,10 +85,12 @@ The loop stops after artifacts are written. `review_bundle.md` collects the diff
 - v6 named gates and diff reporting
 - v7 human review bundle
 - v8 local draft PR handoff package
+- v8.1 PR handoff validation
+- v9 local issue / CI context intake
 
 ## Intentionally Not Implemented Yet
 
-Agent Loop Factory does not currently implement scheduler support, GitHub webhooks, GitHub Actions integration, PR creation, Docker sandboxing, an LLM verifier, MCP/connectors, parallel agents, skill auto-selection, auto-merge, auto-deploy, publishing, or release creation.
+Agent Loop Factory does not currently implement scheduler support, GitHub webhooks, GitHub Actions integration, automatic issue or CI fetching, PR creation, Docker sandboxing, an LLM verifier, MCP/connectors, parallel agents, skill auto-selection, auto-merge, auto-deploy, publishing, or release creation.
 
 ## Safety Model
 
@@ -103,8 +110,7 @@ The safety model is local, supervised, and deterministic:
 
 ## Future Roadmap
 
-- v8.1 optional explicit local gh draft PR creation, still no auto-merge
-- v9 GitHub issue / CI trigger support
+- v9.1 optional explicit local GitHub fetch using gh, read-only, no PR creation
 - v10 optional LLM reviewer or PR review integration
 - v11 scheduler / recurring runs
 - v12 multi-agent or parallel execution

@@ -30,10 +30,11 @@ def write_review_bundle(
     diff_summary: str,
     ok: bool,
     handoff_check_status: str | None = None,
+    context_summary: dict[str, object] | None = None,
 ) -> tuple[str, str]:
     decision, reason = recommendation(verifier_result, gates)
     (run_dir / "review_bundle.md").write_text(
-        build_review_bundle(run_id, task_spec, skill, implementer, worktree, gates, verifier_result, diff_summary, ok, decision, reason, handoff_check_status)
+        build_review_bundle(run_id, task_spec, skill, implementer, worktree, gates, verifier_result, diff_summary, ok, decision, reason, handoff_check_status, context_summary)
     )
     return decision, reason
 
@@ -51,12 +52,14 @@ def build_review_bundle(
     decision: str | None = None,
     reason: str | None = None,
     handoff_check_status: str | None = None,
+    context_summary: dict[str, object] | None = None,
 ) -> str:
     decision, reason = (decision, reason) if decision and reason else recommendation(verifier_result, gates)
     task_source = "file" if task_spec.task_file_path else "inline"
     task_file = task_spec.task_file_path or "None"
     skill_name = skill.skill_name if skill else "None"
     skill_file = skill.skill_file_path if skill else "None"
+    context_summary = context_summary or {}
     return f"""# Human Review Bundle
 
 ## Run Summary
@@ -82,6 +85,12 @@ def build_review_bundle(
 
 - skill name: {skill_name}
 - skill file path: {skill_file}
+
+## External Context
+
+- issue context artifact path: {_none(context_summary.get("issue_artifact_path"))}
+- CI log context artifact path: {_none(context_summary.get("ci_log_artifact_path"))}
+- context summary artifact path: {_none(context_summary.get("context_summary_path"))}
 
 ## Changed Files
 
@@ -170,6 +179,10 @@ def _value(value: object) -> str:
     if isinstance(value, bool):
         return str(value).lower()
     return "Unavailable" if value is None else str(value)
+
+
+def _none(value: object) -> str:
+    return "None" if value is None else str(value)
 
 
 def _warning(value: object) -> str:
