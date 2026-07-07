@@ -57,7 +57,7 @@ The verifier is deterministic. It checks required gate results, changed file cou
 
 ### Artifacts
 
-Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `gate_results.json`, `verifier_result.json`, logs, `diff_summary.md`, and `task_spec.md`. Skill and Codex artifacts are written only when those features are used.
+Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `gate_results.json`, `verifier_result.json`, logs, `diff_summary.md`, and `task_spec.md`. Skill and Codex artifacts are written only when those features are used.
 
 ### Progress and State Memory
 
@@ -65,7 +65,7 @@ Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.m
 
 ### Human Review Boundary
 
-The loop stops after artifacts are written. `review_bundle.md` collects the diff summary, gates, verifier result, task guardrails, and checklist for the human decision. The draft PR handoff files provide a local title, body, and suggested manual commands. They are review aids only; Agent Loop Factory does not commit, push, open PRs, approve, merge, or deploy.
+The loop stops after artifacts are written. `review_bundle.md` collects the diff summary, gates, verifier result, task guardrails, and checklist for the human decision. The draft PR handoff files provide a local title, body, suggested manual commands, and local-only handoff validation status. They are review aids only; Agent Loop Factory does not commit, push, open PRs, approve, merge, or deploy.
 
 ## Current Implemented System Through v7
 

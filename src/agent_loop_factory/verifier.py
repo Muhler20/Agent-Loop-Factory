@@ -21,6 +21,8 @@ RESERVED_ARTIFACT_FILENAMES = {
     "pr_body.md",
     "pr_commands.md",
     "pr_handoff.md",
+    "pr_handoff_check.md",
+    "pr_handoff_check.json",
     "task_spec.md",
     "stdout.log",
     "stderr.log",

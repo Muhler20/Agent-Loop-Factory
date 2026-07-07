@@ -16,12 +16,13 @@ def write_pr_handoff(
     gates: list[dict[str, object]],
     verifier_result: dict[str, object],
     recommendation: str,
+    handoff_check_status: str = "Unavailable",
 ) -> None:
     title = pr_title(run_id, task_spec)
     (run_dir / "pr_title.txt").write_text(title + "\n")
-    (run_dir / "pr_body.md").write_text(build_pr_body(task_spec, skill, gates, verifier_result, recommendation))
+    (run_dir / "pr_body.md").write_text(build_pr_body(task_spec, skill, gates, verifier_result, recommendation, handoff_check_status))
     (run_dir / "pr_commands.md").write_text(build_pr_commands(run_dir, title, worktree, verifier_result))
-    (run_dir / "pr_handoff.md").write_text(build_pr_handoff(run_dir, recommendation))
+    (run_dir / "pr_handoff.md").write_text(build_pr_handoff(run_dir, recommendation, handoff_check_status))
 
 
 def pr_title(run_id: str, task_spec: TaskSpec) -> str:
@@ -36,6 +37,7 @@ def build_pr_body(
     gates: list[dict[str, object]],
     verifier_result: dict[str, object],
     recommendation: str,
+    handoff_check_status: str = "Unavailable",
 ) -> str:
     task_source = "file" if task_spec.task_file_path else "inline"
     return f"""# Summary
@@ -88,6 +90,9 @@ def build_pr_body(
 
 * recommendation: {recommendation}
 * review bundle: review_bundle.md
+* handoff check: pr_handoff_check.md
+* handoff check json: pr_handoff_check.json
+* handoff check status: {handoff_check_status}
 
 # Safety
 
@@ -153,13 +158,16 @@ gh pr create \\
 """
 
 
-def build_pr_handoff(run_dir: Path, recommendation: str) -> str:
+def build_pr_handoff(run_dir: Path, recommendation: str, handoff_check_status: str = "Unavailable") -> str:
     return f"""# Draft PR Handoff
 
 * pr_title.txt: {run_dir / "pr_title.txt"}
 * pr_body.md: {run_dir / "pr_body.md"}
 * pr_commands.md: {run_dir / "pr_commands.md"}
+* pr_handoff_check.md: {run_dir / "pr_handoff_check.md"}
+* pr_handoff_check.json: {run_dir / "pr_handoff_check.json"}
 * recommendation: {recommendation}
+* handoff check status: {handoff_check_status}
 * no commands were executed: true
 """
 

@@ -84,11 +84,15 @@ class VerifierTests(unittest.TestCase):
         with repo() as tmp:
             (tmp / "pr_body.md").write_text("body\n")
             (tmp / "pr_commands.md").write_text("commands\n")
+            (tmp / "pr_handoff_check.md").write_text("check\n")
+            (tmp / "pr_handoff_check.json").write_text("{}\n")
             result = verify(tmp)
             self.assertFalse(result["ok"])
-            self.assertEqual(result["reserved_artifacts_touched"], ["pr_body.md", "pr_commands.md"])
+            self.assertEqual(result["reserved_artifacts_touched"], ["pr_body.md", "pr_commands.md", "pr_handoff_check.json", "pr_handoff_check.md"])
             self.assertIn("reserved run artifact file changed in target repo: pr_body.md", result["reasons"])
             self.assertIn("reserved run artifact file changed in target repo: pr_commands.md", result["reasons"])
+            self.assertIn("reserved run artifact file changed in target repo: pr_handoff_check.md", result["reasons"])
+            self.assertIn("reserved run artifact file changed in target repo: pr_handoff_check.json", result["reasons"])
 
     def test_fails_when_human_required_paths_are_touched(self) -> None:
         with repo() as tmp:

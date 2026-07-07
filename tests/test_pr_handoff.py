@@ -43,6 +43,7 @@ class PrHandoffTests(unittest.TestCase):
                 gates,
                 verifier_result(),
                 "ready_for_human_review",
+                "ready",
             )
 
             self.assertEqual((run_dir / "pr_title.txt").read_text(), "Fix add\n")
@@ -58,6 +59,7 @@ class PrHandoffTests(unittest.TestCase):
             self.assertIn("* diff_line_count: 2", body)
             self.assertIn("* name: unit tests", body)
             self.assertIn("* recommendation: ready_for_human_review", body)
+            self.assertIn("* handoff check status: ready", body)
             self.assertIn("Agent Loop Factory did not push, open a PR, merge, or deploy.", body)
             self.assertIn("Review before running.", commands)
             self.assertIn("Do not run if verifier failed.", commands)
@@ -70,6 +72,9 @@ class PrHandoffTests(unittest.TestCase):
             self.assertIn("gh pr create \\", commands)
             self.assertIn("--draft \\", commands)
             self.assertIn("--body-file", commands)
+            self.assertIn("* pr_handoff_check.md:", handoff)
+            self.assertIn("* pr_handoff_check.json:", handoff)
+            self.assertIn("* handoff check status: ready", handoff)
             self.assertIn("* no commands were executed: true", handoff)
 
     def test_no_changed_files_case_is_handled(self) -> None:

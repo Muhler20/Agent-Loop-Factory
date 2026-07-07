@@ -37,6 +37,7 @@ class ReviewBundleTests(unittest.TestCase):
                 verifier,
                 "diff --git a/sample_math/__init__.py b/sample_math/__init__.py\n",
                 True,
+                "ready",
             )
 
             bundle = (run_dir / "review_bundle.md").read_text()
@@ -61,6 +62,9 @@ class ReviewBundleTests(unittest.TestCase):
             self.assertIn("diff --git", bundle)
             self.assertIn("- Confirm the changed files match the task.", bundle)
             self.assertIn("- recommendation: manual_review_required", bundle)
+            self.assertIn("- pr_handoff_check.md", bundle)
+            self.assertIn("- pr_handoff_check.json", bundle)
+            self.assertIn("- handoff check status: ready", bundle)
 
     def test_bundle_says_none_without_skill(self) -> None:
         bundle = build_review_bundle(

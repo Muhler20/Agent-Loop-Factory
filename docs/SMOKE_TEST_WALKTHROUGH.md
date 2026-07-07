@@ -80,6 +80,8 @@ cat .agent/runs/<run_id>/pr_title.txt
 sed -n '1,220p' .agent/runs/<run_id>/pr_body.md
 sed -n '1,220p' .agent/runs/<run_id>/pr_commands.md
 sed -n '1,120p' .agent/runs/<run_id>/pr_handoff.md
+sed -n '1,160p' .agent/runs/<run_id>/pr_handoff_check.md
+cat .agent/runs/<run_id>/pr_handoff_check.json
 cat .agent/runs/<run_id>/gate_results.json
 cat .agent/runs/<run_id>/verifier_result.json
 sed -n '1,220p' .agent/runs/<run_id>/diff_summary.md
@@ -95,6 +97,8 @@ Expected artifacts include:
 - `pr_body.md`
 - `pr_commands.md`
 - `pr_handoff.md`
+- `pr_handoff_check.md`
+- `pr_handoff_check.json`
 - `gate_results.json`
 - `verifier_result.json`
 - `diff_summary.md`

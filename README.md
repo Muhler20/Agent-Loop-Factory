@@ -237,6 +237,8 @@ Each run writes:
 - `.agent/runs/<run_id>/pr_body.md`
 - `.agent/runs/<run_id>/pr_commands.md`
 - `.agent/runs/<run_id>/pr_handoff.md`
+- `.agent/runs/<run_id>/pr_handoff_check.md`
+- `.agent/runs/<run_id>/pr_handoff_check.json`
 - `.agent/runs/<run_id>/task_spec.md`
 
 When `--skill` is used, the run also writes:
@@ -254,7 +256,7 @@ The orchestrator also updates `.agent/state.json` and `PROGRESS.md`.
 
 `review_bundle.md` is the human review artifact. It collects the task, skill, changed files, gates, verifier result, diff summary, checklist, and a conservative recommendation such as `ready_for_human_review`, `manual_review_required`, or `reject_or_rework`.
 
-The draft PR handoff package is local only. `pr_title.txt`, `pr_body.md`, and `pr_commands.md` prepare a human to inspect the worktree and optionally commit, push, and create a draft PR manually. Agent Loop Factory writes these suggestions after `review_bundle.md`, but it does not run `git commit`, `git push`, `gh pr create`, merge, or deploy. Review the diff, gates, verifier result, and changed files before using anything in `pr_commands.md`. Future draft PR automation can build on these artifacts without changing the current human review boundary.
+The draft PR handoff package is local only. `pr_title.txt`, `pr_body.md`, and `pr_commands.md` prepare a human to inspect the worktree and optionally commit, push, and create a draft PR manually. `pr_handoff_check.md` and `pr_handoff_check.json` summarize local-only validation of the handoff: verifier result, required gates, review recommendation, changed files, task guardrails, reserved artifacts, worktree path, git repo state, branch, origin remote presence, and `gh` availability. Agent Loop Factory writes these suggestions, but it does not run `git commit`, `git push`, `gh pr create`, merge, or deploy. `gh` availability and origin remote presence are informational only, not blockers. Review the diff, gates, verifier result, handoff check, and changed files before using anything in `pr_commands.md`. Future draft PR automation can build on these artifacts without changing the current human review boundary.
 
 ## Verifier Checks
 

@@ -11,8 +11,9 @@ from .codex_implementer import run_codex_implementer, write_codex_skip
 from .config import load_config
 from .create_worktree import create_worktree
 from .pr_handoff import write_pr_handoff
+from .pr_handoff_check import write_pr_handoff_check
 from .run_gates import run_gates
-from .review_bundle import write_review_bundle
+from .review_bundle import recommendation, write_review_bundle
 from .skill import Skill
 from .summarize_diff import write_diff_summary
 from .task_spec import TaskSpec, inline_task_spec, task_spec_from_body
@@ -71,9 +72,11 @@ def run(
     gates_ok = all(bool(gate["ok"]) for gate in gates if gate.get("required", True))
     ok = worktree.ok and implementer_ok and gates_ok and bool(verifier_result["ok"])
 
-    review_recommendation, _ = write_review_bundle(run_dir, run_id, task_spec, skill, selected_implementer, worktree, gates, verifier_result, diff_summary, ok)
-    write_pr_handoff(run_dir, run_id, task_spec, skill, worktree, gates, verifier_result, review_recommendation)
-    report = _report(task_spec, skill, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, verifier_result, diff_summary, ok, review_recommendation)
+    review_recommendation, _ = recommendation(verifier_result, gates)
+    handoff_check = write_pr_handoff_check(run_dir, worktree, gates, verifier_result, review_recommendation)
+    write_review_bundle(run_dir, run_id, task_spec, skill, selected_implementer, worktree, gates, verifier_result, diff_summary, ok, handoff_check["status"])
+    write_pr_handoff(run_dir, run_id, task_spec, skill, worktree, gates, verifier_result, review_recommendation, handoff_check["status"])
+    report = _report(task_spec, skill, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, verifier_result, diff_summary, ok, review_recommendation, handoff_check["status"])
     (run_dir / "run_report.md").write_text(report)
     _update_state(agent_dir / "state.json", run_id, ok)
 
@@ -97,7 +100,7 @@ def _run_id() -> str:
     return f"{stamp}-{secrets.token_hex(3)}"
 
 
-def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool, implementer: str, codex_result, config, worktree, gates, verifier_result, diff_summary: str, ok: bool, review_recommendation: str = "Unavailable") -> str:
+def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool, implementer: str, codex_result, config, worktree, gates, verifier_result, diff_summary: str, ok: bool, review_recommendation: str = "Unavailable", handoff_check_status: str = "Unavailable") -> str:
     warnings = [str(gate["warning"]) for gate in gates if gate.get("warning")]
     if not worktree.ok:
         warnings.append(worktree.message)
@@ -192,6 +195,9 @@ Task forbidden touched:
 - pr_body: .agent/runs/{run_id}/pr_body.md
 - pr_commands: .agent/runs/{run_id}/pr_commands.md
 - pr_handoff: .agent/runs/{run_id}/pr_handoff.md
+- pr_handoff_check: .agent/runs/{run_id}/pr_handoff_check.md
+- pr_handoff_check_json: .agent/runs/{run_id}/pr_handoff_check.json
+- handoff_check_status: {handoff_check_status}
 - no commands executed: true
 
 ## Codex Implementer
