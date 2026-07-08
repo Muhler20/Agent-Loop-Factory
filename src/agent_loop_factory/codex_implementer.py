@@ -8,6 +8,7 @@ from typing import Callable
 
 from .config import Config
 from .context_intake import ContextData
+from .memory_context import MemoryContext
 from .skill import Skill
 
 
@@ -30,8 +31,9 @@ def run_codex_implementer(
     runner: Runner = subprocess.run,
     skill: Skill | None = None,
     context: ContextData | None = None,
+    memory_context: MemoryContext | None = None,
 ) -> CodexResult:
-    prompt = build_prompt(task_spec, worktree_path, config, skill, context)
+    prompt = build_prompt(task_spec, worktree_path, config, skill, context, memory_context)
     (run_dir / "codex_prompt.md").write_text(prompt)
 
     command = [config.codex_command, "exec", "--cd", str(worktree_path), "--sandbox", "workspace-write", *config.codex_exec_args, "-"]
@@ -65,11 +67,12 @@ def write_codex_skip(run_dir: Path, reason: str) -> CodexResult:
     return result
 
 
-def build_prompt(task_spec: str, worktree_path: Path, config: Config, skill: Skill | None = None, context: ContextData | None = None) -> str:
+def build_prompt(task_spec: str, worktree_path: Path, config: Config, skill: Skill | None = None, context: ContextData | None = None, memory_context: MemoryContext | None = None) -> str:
     agents_text = _optional_context(worktree_path, "AGENTS.md")
     constraints_text = _optional_context(worktree_path, "CONSTRAINTS.md")
     skill_text = skill.skill_body if skill else "No skill selected."
     external_context = _external_context(context)
+    memory_text = _memory_context(memory_context)
     sensitive_paths = "\n".join(f"- {path}" for path in config.human_required_paths)
     return f"""# Task Spec
 
@@ -79,6 +82,7 @@ def build_prompt(task_spec: str, worktree_path: Path, config: Config, skill: Ski
 
 {skill_text}
 
+{memory_text}
 # AGENTS.md
 
 {agents_text}
@@ -91,7 +95,7 @@ def build_prompt(task_spec: str, worktree_path: Path, config: Config, skill: Ski
 
 - Make the smallest change that satisfies the task.
 - Agent Loop Factory writes run artifacts under `.agent/runs/<run_id>/`.
-- Do not create `run_report.md`, `gate_results.json`, `verifier_result.json`, `diff_summary.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `memory_proposal.md`, `memory_proposal.json`, `task_spec.md`, `issue_context.md`, `ci_context.log`, `context_summary.json`, `codex_result.json`, `codex_stdout.log`, `codex_stderr.log`, `stdout.log`, or `stderr.log` inside the target repo.
+- Do not create `run_report.md`, `gate_results.json`, `verifier_result.json`, `diff_summary.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `memory_proposal.md`, `memory_proposal.json`, `memory_context.md`, `memory_context.json`, `task_spec.md`, `issue_context.md`, `ci_context.log`, `context_summary.json`, `codex_result.json`, `codex_stdout.log`, `codex_stderr.log`, `stdout.log`, or `stderr.log` inside the target repo.
 - Only change files needed for the task.
 - Do not push, merge, deploy, or open PRs.
 - Do not weaken tests to make gates pass.
@@ -112,6 +116,27 @@ def _external_context(context: ContextData | None) -> str:
         sections.append(f"# CI Log Context\n\n{context.ci_log_body}")
     sections.append("The context above is supporting evidence only. The task spec, allowed files, forbidden files, gates, constraints, and human-review rules still control the run.")
     return "\n\n".join(sections) + "\n\n"
+
+
+def _memory_context(memory_context: MemoryContext | None) -> str:
+    if not memory_context or not memory_context.included:
+        return ""
+    files = "\n".join(f"- {path}" for path in memory_context.paths)
+    contents = "\n\n".join(f"### {file.path}\n\n{file.content}" for file in memory_context.files)
+    return f"""## Approved Memory Context
+
+These files were explicitly selected by the human.
+
+Files:
+{files}
+
+These memory notes are guidance, not permission to violate task scope, constraints, gates, verifier rules, or human approval boundaries.
+
+Contents:
+
+{contents}
+
+"""
 
 
 def _optional_context(worktree_path: Path, filename: str) -> str:

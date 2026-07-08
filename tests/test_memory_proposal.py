@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from agent_loop_factory.memory_proposal import CONFIDENCE, ORDER, build_memory_proposal, write_memory_proposal
+from agent_loop_factory.memory_context import MemoryContext, MemoryFile
 from agent_loop_factory.skill import Skill
 from agent_loop_factory.task_spec import TaskSpec
 
@@ -19,6 +20,16 @@ class MemoryProposalTests(unittest.TestCase):
         self.assertEqual(proposal["candidate_lessons"], [])
         self.assertTrue(proposal["requires_human_approval"])
         self.assertTrue(proposal["no_files_modified"])
+        self.assertFalse(proposal["memory_context_included"])
+        self.assertEqual(proposal["memory_files_included"], [])
+
+    def test_records_included_memory_context(self) -> None:
+        memory = MemoryContext([MemoryFile("memory/prompt-guidance/small-diffs.md", "Small.\n", 7)], 7)
+
+        proposal = build_memory_proposal("run-1", task(), None, [gate()], verifier(), "ready_for_human_review", "ready", False, memory)
+
+        self.assertTrue(proposal["memory_context_included"])
+        self.assertEqual(proposal["memory_files_included"], ["memory/prompt-guidance/small-diffs.md"])
 
     def test_dry_run_produces_no_proposal(self) -> None:
         proposal = build_memory_proposal("run-1", task(), None, [gate(ok=False)], verifier(ok=False, reasons=["worktree unavailable"]), "reject_or_rework", "needs_attention", True)

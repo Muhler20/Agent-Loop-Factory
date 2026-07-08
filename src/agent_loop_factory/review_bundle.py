@@ -32,10 +32,11 @@ def write_review_bundle(
     handoff_check_status: str | None = None,
     context_summary: dict[str, object] | None = None,
     memory_proposal: dict[str, object] | None = None,
+    memory_summary: dict[str, object] | None = None,
 ) -> tuple[str, str]:
     decision, reason = recommendation(verifier_result, gates)
     (run_dir / "review_bundle.md").write_text(
-        build_review_bundle(run_id, task_spec, skill, implementer, worktree, gates, verifier_result, diff_summary, ok, decision, reason, handoff_check_status, context_summary, memory_proposal)
+        build_review_bundle(run_id, task_spec, skill, implementer, worktree, gates, verifier_result, diff_summary, ok, decision, reason, handoff_check_status, context_summary, memory_proposal, memory_summary)
     )
     return decision, reason
 
@@ -55,6 +56,7 @@ def build_review_bundle(
     handoff_check_status: str | None = None,
     context_summary: dict[str, object] | None = None,
     memory_proposal: dict[str, object] | None = None,
+    memory_summary: dict[str, object] | None = None,
 ) -> str:
     decision, reason = (decision, reason) if decision and reason else recommendation(verifier_result, gates)
     task_source = "file" if task_spec.task_file_path else "inline"
@@ -63,6 +65,7 @@ def build_review_bundle(
     skill_file = skill.skill_file_path if skill else "None"
     context_summary = context_summary or {}
     proposal_status = (memory_proposal or {}).get("proposal_status", "Unavailable")
+    memory_context = _memory_context(memory_summary)
     return f"""# Human Review Bundle
 
 ## Run Summary
@@ -94,6 +97,8 @@ def build_review_bundle(
 - issue context artifact path: {_none(context_summary.get("issue_artifact_path"))}
 - CI log context artifact path: {_none(context_summary.get("ci_log_artifact_path"))}
 - context summary artifact path: {_none(context_summary.get("context_summary_path"))}
+
+{memory_context}
 
 ## Changed Files
 
@@ -197,3 +202,15 @@ def _none(value: object) -> str:
 
 def _warning(value: object) -> str:
     return str(value) if value else "None"
+
+
+def _memory_context(memory_summary: dict[str, object] | None) -> str:
+    if not memory_summary:
+        return ""
+    return """## Memory Context
+
+- memory_context.md
+- memory_context.json
+- Memory files were explicitly selected by the human.
+- No memory files were modified.
+"""

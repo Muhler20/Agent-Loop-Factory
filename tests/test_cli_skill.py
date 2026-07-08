@@ -79,6 +79,56 @@ class CliSkillTests(unittest.TestCase):
         self.assertIn("sample_math.add", calls[0][1]["context"].issue_body)
         self.assertIn("AssertionError", calls[0][1]["context"].ci_log_body)
 
+    def test_memory_file_flag_is_passed_to_run(self) -> None:
+        module = load_cli_module()
+        calls = []
+
+        def fake_run(*args, **kwargs):
+            calls.append((args, kwargs))
+            return {"run_id": "test-run", "run_dir": "/tmp/test-run", "ok": False, "dry_run": True}
+
+        old_argv = sys.argv
+        module.run = fake_run
+        sys.argv = [
+            "run_agent_loop.py",
+            "--task",
+            "fix add",
+            "--memory-file",
+            "memory/INDEX.md",
+            "--dry-run",
+        ]
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = module.main()
+        finally:
+            sys.argv = old_argv
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][1]["memory_context"].paths, ["memory/INDEX.md"])
+
+    def test_failed_memory_validation_does_not_call_run(self) -> None:
+        module = load_cli_module()
+        state_before = (ROOT / ".agent" / "state.json").read_text()
+        progress_before = (ROOT / "PROGRESS.md").read_text()
+
+        def fake_run(*args, **kwargs):
+            raise AssertionError("run should not be called")
+
+        old_argv = sys.argv
+        module.run = fake_run
+        sys.argv = ["run_agent_loop.py", "--task", "x", "--memory-file", "memory/missing.md"]
+        stderr = io.StringIO()
+        try:
+            with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit) as exc:
+                module.main()
+        finally:
+            sys.argv = old_argv
+
+        self.assertEqual(exc.exception.code, 2)
+        self.assertIn("memory file does not exist", stderr.getvalue())
+        self.assertEqual((ROOT / ".agent" / "state.json").read_text(), state_before)
+        self.assertEqual((ROOT / "PROGRESS.md").read_text(), progress_before)
+
     def test_missing_skill_exits_clearly(self) -> None:
         module = load_cli_module()
 

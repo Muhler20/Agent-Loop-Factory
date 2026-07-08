@@ -21,6 +21,7 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - v9.1 config and safety hardening with repository test CI
 - v10 reviewable memory proposals
 - v10.1 human-approved memory registry
+- v10.2 explicit memory inclusion in prompts
 
 ## Current Capabilities
 
@@ -42,16 +43,16 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - Reviewable memory proposal artifacts: `memory_proposal.md` and `memory_proposal.json`.
 - Human-approved memory registry skeleton under `memory/`.
 - Memory registry validation with `--check-memory`.
+- Explicit human-selected memory prompt inclusion with `--memory-file`.
 - Run artifacts under `.agent/runs/<run_id>/`.
 - Human review boundary after every run.
 
 ## Next Recommended Milestone
 
-v10.2 explicit memory inclusion in prompts.
+v10.3 memory hygiene checks: stale/deprecated/conflicting memory.
 
 ## Future Milestones
 
-- v10.2 explicit memory inclusion in prompts
 - v10.3 memory hygiene checks: stale/deprecated/conflicting memory
 - v11 optional read-only GitHub issue / CI fetch using gh
 - v12 optional LLM reviewer / PR review integration
@@ -71,7 +72,7 @@ Current Agent Loop Factory does not provide:
 - auto-deploy
 - GitHub integration
 - automatic memory writes to durable project rules
-- automatic memory retrieval into prompts
+- automatic memory search, ranking, retrieval, or selection
 - automatic issue or CI fetching
 - PR creation
 - scheduler support

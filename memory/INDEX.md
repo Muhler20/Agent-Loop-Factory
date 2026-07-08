@@ -6,11 +6,21 @@ The memory registry is the durable home for reusable lessons that a human has ac
 
 Memory proposals are generated per run in `.agent/runs/<run_id>/` as `memory_proposal.md` and `memory_proposal.json`. They are suggestions only. Accepted lessons may be copied or edited into `memory/` by a human.
 
-Agent Loop Factory does not automatically apply memory proposals. It also does not automatically retrieve registry memory into Codex prompts yet.
+Agent Loop Factory does not automatically apply memory proposals. Registry memory is included in Codex prompts only when a human explicitly names files with `--memory-file`.
 
 ## Human Approval Rule
 
 Only humans should add accepted memory lessons to this registry. The loop may propose memory, but it must not copy proposal content into these files.
+
+## Explicit Inclusion
+
+Use repeatable `--memory-file` flags to include approved memory in a run:
+
+```bash
+python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --memory-file memory/prompt-guidance/small-diffs.md
+```
+
+The loop does not search, rank, retrieve, or auto-select memory. Included memory is guidance only; task specs, constraints, gates, verifier rules, and human approval boundaries still win. Runs do not modify memory files.
 
 ## Current Categories
 

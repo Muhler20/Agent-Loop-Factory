@@ -1,6 +1,6 @@
 # Smoke Test Walkthrough
 
-This walkthrough documents the proven sample target repo smoke test for Agent Loop Factory v10.1. It uses a tiny local Python repo with one failing unittest, a task spec, optional local context files, a local skill, a named required gate, the Codex implementer, deterministic verifier artifacts, draft PR handoff artifacts, reviewable memory proposal artifacts, and the memory registry check.
+This walkthrough documents the proven sample target repo smoke test for Agent Loop Factory v10.2. It uses a tiny local Python repo with one failing unittest, a task spec, optional local context files, optional explicit memory files, a local skill, a named required gate, the Codex implementer, deterministic verifier artifacts, draft PR handoff artifacts, reviewable memory proposal artifacts, and the memory registry check.
 
 ## Paths
 
@@ -80,6 +80,18 @@ python3 scripts/run_agent_loop.py \
   --implementer codex
 ```
 
+Optional explicit approved memory:
+
+```bash
+python3 scripts/run_agent_loop.py \
+  --task-file tasks/fix-sample-add.md \
+  --memory-file memory/prompt-guidance/small-diffs.md \
+  --skill failing-test-fix \
+  --implementer codex
+```
+
+Memory files must be named by the human. The loop does not search, rank, retrieve, or auto-select memory.
+
 The command prints:
 
 ```text
@@ -116,6 +128,13 @@ sed -n '1,120p' .agent/runs/<run_id>/issue_context.md
 sed -n '1,120p' .agent/runs/<run_id>/ci_context.log
 ```
 
+When memory files are provided:
+
+```bash
+sed -n '1,220p' .agent/runs/<run_id>/memory_context.md
+cat .agent/runs/<run_id>/memory_context.json
+```
+
 Expected artifacts include:
 
 - `run_report.md`
@@ -146,6 +165,11 @@ When context files are provided, expected artifacts also include:
 - `issue_context.md`
 - `ci_context.log`
 
+When memory files are provided, expected artifacts also include:
+
+- `memory_context.md`
+- `memory_context.json`
+
 ## Expected Successful Result
 
 In `run_report.md`:
@@ -173,7 +197,16 @@ In `memory_proposal.json`:
 - clean successful smoke runs usually have `proposal_status` set to `no_proposal`
 - `requires_human_approval` is `true`
 - `no_files_modified` is `true`
+- `memory_context_included` reflects whether `--memory-file` was used
+- `memory_files_included` lists explicit memory files or is empty
 - no durable memory or rule files are updated automatically
+
+In `memory_context.json`, when `--memory-file` is used:
+
+- `included` is `true`
+- `automatic_selection` is `false`
+- `automatic_retrieval` is `false`
+- `no_files_modified` is `true`
 
 In `gate_results.json`:
 
@@ -196,6 +229,8 @@ In `codex_prompt.md`:
 - the prompt includes the selected skill
 - the prompt includes the local constraints from the sample target repo when present
 - when context files are provided, the prompt includes `Issue Context` and `CI Log Context`
+- when memory files are provided, the prompt includes `Approved Memory Context`
+- included memory is guidance only and does not override task specs, constraints, gates, verifier rules, or human approval boundaries
 
 ## Cleanup
 

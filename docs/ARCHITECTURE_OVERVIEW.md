@@ -10,14 +10,15 @@ Agent Loop Factory is a supervised local control loop for software-agent coding 
 2. The orchestrator reads `.agent/config.yaml`.
 3. The task is loaded from `--task` or `--task-file`.
 4. Optional local issue and CI log context files are loaded.
-5. An explicitly selected local skill is loaded, if provided.
-6. A run directory is created under `.agent/runs/<run_id>/`.
-7. A git worktree is created under the configured worktree base path.
-8. The selected implementer runs. The default is `none`; `codex` runs once when requested.
-9. Configured gates run in the worktree.
-10. The deterministic verifier inspects gates, diff size, changed files, task guardrails, sensitive paths, and test weakening signals.
-11. Reviewable memory proposal artifacts are generated from deterministic run facts.
-12. Artifacts and local draft PR handoff files are written, progress/state files are updated, and the loop stops.
+5. Explicit memory files are validated if `--memory-file` is provided.
+6. An explicitly selected local skill is loaded, if provided.
+7. A run directory is created under `.agent/runs/<run_id>/`.
+8. A git worktree is created under the configured worktree base path.
+9. The selected implementer runs. The default is `none`; `codex` runs once when requested.
+10. Configured gates run in the worktree.
+11. The deterministic verifier inspects gates, diff size, changed files, task guardrails, sensitive paths, and test weakening signals.
+12. Reviewable memory proposal artifacts are generated from deterministic run facts.
+13. Artifacts and local draft PR handoff files are written, progress/state files are updated, and the loop stops.
 
 ## Core Components
 
@@ -45,6 +46,10 @@ An inline `--task` provides a simple task body. A Markdown `--task-file` provide
 
 A skill is an explicitly selected local playbook at `skills/<skill_name>/SKILL.md`. It is copied into the run artifacts and included in the Codex prompt. Skills are not auto-selected or fetched remotely.
 
+### Memory Context
+
+`--memory-file` is a repeatable CLI flag for explicitly including human-approved Markdown files from `memory/` in the Codex prompt. The loop validates paths and writes `memory_context.md` and `memory_context.json` for the run. It does not search, rank, retrieve, auto-select, or modify memory files. Included memory is guidance only; task specs, constraints, human-required paths, gates, verifier rules, and approval boundaries still win.
+
 ### Worktree Isolation
 
 Each non-dry run creates a new git worktree under `worktree_base_path`. The target repo's main checkout is not edited directly.
@@ -63,7 +68,7 @@ The verifier is deterministic. It checks required gate results, changed file cou
 
 ### Artifacts
 
-Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `memory_proposal.md`, `memory_proposal.json`, `gate_results.json`, `verifier_result.json`, logs, `diff_summary.md`, `task_spec.md`, and `context_summary.json`. `issue_context.md` and `ci_context.log` are written when those context files are provided. Skill and Codex artifacts are written only when those features are used.
+Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `memory_proposal.md`, `memory_proposal.json`, `gate_results.json`, `verifier_result.json`, logs, `diff_summary.md`, `task_spec.md`, and `context_summary.json`. `issue_context.md`, `ci_context.log`, `memory_context.md`, and `memory_context.json` are written only when their matching context flags are provided. Skill and Codex artifacts are written only when those features are used.
 
 ### Memory Proposals
 
@@ -71,7 +76,7 @@ Memory proposals are deterministic, advisory run artifacts. They may suggest reu
 
 ### Memory Registry
 
-`memory/` is the durable registry for human-approved lessons. Humans may copy or edit accepted per-run proposals into the registry with provenance. v10.1 validates the registry shape with `--check-memory`, but it does not retrieve registry memory into prompts.
+`memory/` is the durable registry for human-approved lessons. Humans may copy or edit accepted per-run proposals into the registry with provenance. `--check-memory` validates the registry shape. `--memory-file` can include named registry files in a run, but only when a human explicitly provides the paths.
 
 ### Progress and State Memory
 
@@ -81,7 +86,7 @@ Memory proposals are deterministic, advisory run artifacts. They may suggest reu
 
 The loop stops after artifacts are written. `review_bundle.md` collects the diff summary, gates, verifier result, task guardrails, and checklist for the human decision. The draft PR handoff files provide a local title, body, suggested manual commands, and local-only handoff validation status. They are review aids only; Agent Loop Factory does not commit, push, open PRs, approve, merge, or deploy.
 
-## Current Implemented System Through v10.1
+## Current Implemented System Through v10.2
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -99,10 +104,11 @@ The loop stops after artifacts are written. `review_bundle.md` collects the diff
 - v9.1 config and safety hardening with repository test CI
 - v10 reviewable memory proposals
 - v10.1 human-approved memory registry
+- v10.2 explicit memory inclusion in prompts
 
 ## Intentionally Not Implemented Yet
 
-Agent Loop Factory does not currently implement scheduler support, GitHub webhooks, GitHub Actions integration, automatic issue or CI fetching, PR creation, Docker sandboxing, an LLM verifier, MCP/connectors, parallel agents, skill auto-selection, automatic memory writes, automatic memory retrieval, auto-merge, auto-deploy, publishing, or release creation.
+Agent Loop Factory does not currently implement scheduler support, GitHub webhooks, GitHub Actions integration, automatic issue or CI fetching, PR creation, Docker sandboxing, an LLM verifier, MCP/connectors, parallel agents, skill auto-selection, automatic memory writes, automatic memory search/ranking/retrieval/selection, auto-merge, auto-deploy, publishing, or release creation.
 
 ## Safety Model
 
@@ -120,11 +126,10 @@ The safety model is local, supervised, and deterministic:
 - Human review before any merge, deploy, release, or external publication.
 - Draft PR handoff is local text generation only.
 - Memory proposals are advisory and require human approval before any durable rule change.
-- Memory registry entries are human-approved and are not automatically loaded into prompts.
+- Memory registry entries are human-approved and are loaded into prompts only when explicitly named with `--memory-file`.
 
 ## Future Roadmap
 
-- v10.2 explicit memory inclusion in prompts
 - v10.3 memory hygiene checks: stale/deprecated/conflicting memory
 - v11 optional read-only GitHub issue / CI fetch using gh
 - v12 optional LLM reviewer / PR review integration

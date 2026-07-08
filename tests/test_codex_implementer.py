@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from agent_loop_factory.codex_implementer import build_prompt, run_codex_implementer
 from agent_loop_factory.config import Config
 from agent_loop_factory.context_intake import ContextData
+from agent_loop_factory.memory_context import MemoryContext, MemoryFile
 from agent_loop_factory.skill import Skill
 
 
@@ -100,12 +101,30 @@ class CodexImplementerTests(unittest.TestCase):
             self.assertNotIn("# Issue Context", prompt)
             self.assertNotIn("# CI Log Context", prompt)
 
+    def test_prompt_includes_approved_memory_context_when_present(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            memory = MemoryContext([MemoryFile("memory/prompt-guidance/small-diffs.md", "Keep diffs small.\n", 18)], 18)
+
+            prompt = build_prompt("do the task", Path(raw), Config(), memory_context=memory)
+
+            self.assertIn("## Approved Memory Context", prompt)
+            self.assertIn("These files were explicitly selected by the human.", prompt)
+            self.assertIn("memory/prompt-guidance/small-diffs.md", prompt)
+            self.assertIn("Keep diffs small.", prompt)
+            self.assertIn("guidance, not permission to violate task scope", prompt)
+
+    def test_prompt_omits_approved_memory_context_when_absent(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            prompt = build_prompt("do the task", Path(raw), Config())
+
+            self.assertNotIn("## Approved Memory Context", prompt)
+
     def test_prompt_tells_codex_not_to_create_run_artifacts_in_target_repo(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             prompt = build_prompt("do the task", Path(raw), Config())
 
             self.assertIn("Agent Loop Factory writes run artifacts under `.agent/runs/<run_id>/`.", prompt)
-            self.assertIn("Do not create `run_report.md`, `gate_results.json`, `verifier_result.json`, `diff_summary.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `memory_proposal.md`, `memory_proposal.json`, `task_spec.md`", prompt)
+            self.assertIn("Do not create `run_report.md`, `gate_results.json`, `verifier_result.json`, `diff_summary.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `memory_proposal.md`, `memory_proposal.json`, `memory_context.md`, `memory_context.json`, `task_spec.md`", prompt)
             self.assertIn("`issue_context.md`, `ci_context.log`, `context_summary.json`", prompt)
             self.assertIn("inside the target repo", prompt)
             self.assertIn("Only change files needed for the task.", prompt)

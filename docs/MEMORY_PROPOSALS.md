@@ -37,11 +37,17 @@ Humans decide what enters `memory/`. Accepted lessons should be edited for clari
 
 When a lesson can be checked deterministically, prefer a verifier rule over memory.
 
-Agent Loop Factory does not automatically copy proposals into `memory/`, and it does not retrieve registry memory into Codex prompts yet.
+Agent Loop Factory does not automatically copy proposals into `memory/`. Registry memory enters Codex prompts only when a human explicitly names approved files with `--memory-file`.
+
+## v10.2 Explicit Memory Inclusion
+
+`--memory-file PATH` may be repeated to include approved Markdown files from `memory/` in a run. The loop validates the named files, writes `memory_context.md` and `memory_context.json`, and includes the contents in a separated `Approved Memory Context` prompt section when Codex is used.
+
+The loop does not search, rank, retrieve, or auto-select memory. Included memory is guidance only and cannot override task specs, allowed/forbidden files, `CONSTRAINTS.md`, `AGENTS.md`, `human_required_paths`, gates, verifier rules, or no-push/no-PR/no-deploy boundaries. Runs do not modify memory files.
 
 ## Applying Later
 
-A human can apply a proposal by editing an appropriate durable file, such as `memory/`, `CONSTRAINTS.md`, `AGENTS.md`, `skills/<skill>/SKILL.md`, `docs/TASK_SPEC_TEMPLATE.md`, or `docs/LOOP_SELECTION.md`. v10.1 creates the memory registry structure, but no retrieval flow, scheduler, connector, or LLM verifier.
+A human can apply a proposal by editing an appropriate durable file, such as `memory/`, `CONSTRAINTS.md`, `AGENTS.md`, `skills/<skill>/SKILL.md`, `docs/TASK_SPEC_TEMPLATE.md`, or `docs/LOOP_SELECTION.md`. v10.2 adds explicit memory inclusion, but no automatic retrieval flow, scheduler, connector, or LLM verifier.
 
 ## Risks
 

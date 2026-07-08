@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from agent_loop_factory.orchestrator import run
 from agent_loop_factory.context_intake import ContextData
+from agent_loop_factory.memory_context import MemoryContext, MemoryFile
 from agent_loop_factory.skill import Skill
 
 
@@ -90,6 +91,8 @@ class OrchestratorDryRunTests(unittest.TestCase):
             self.assertTrue((run_dir / "pr_handoff_check.json").exists())
             self.assertTrue((run_dir / "memory_proposal.md").exists())
             self.assertTrue((run_dir / "memory_proposal.json").exists())
+            self.assertFalse((run_dir / "memory_context.md").exists())
+            self.assertFalse((run_dir / "memory_context.json").exists())
             self.assertEqual((run_dir / "task_spec.md").read_text(), "# test task description\n\ntest task description\n")
             report = (run_dir / "run_report.md").read_text()
             self.assertIn("task_source: inline", report)
@@ -217,6 +220,28 @@ class OrchestratorDryRunTests(unittest.TestCase):
             self.assertIsNone(summary["ci_log_file_path"])
             self.assertIsNone(summary["ci_log_artifact_path"])
 
+    def test_memory_context_artifacts_and_references_are_written_when_included(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            write_agent_config(tmp_path)
+            memory = MemoryContext([MemoryFile("memory/prompt-guidance/small-diffs.md", "Keep diffs small.\n", 18)], 18)
+
+            result = run("test task description", tmp_path, dry_run=True, memory_context=memory)
+            run_dir = Path(result["run_dir"])
+
+            memory_json = json.loads((run_dir / "memory_context.json").read_text())
+            proposal_json = json.loads((run_dir / "memory_proposal.json").read_text())
+            self.assertTrue(memory_json["included"])
+            self.assertEqual(memory_json["files"], ["memory/prompt-guidance/small-diffs.md"])
+            self.assertIn("Keep diffs small.", (run_dir / "memory_context.md").read_text())
+            self.assertIn("## Memory Context", (run_dir / "run_report.md").read_text())
+            self.assertIn(f"path: .agent/runs/{result['run_id']}/memory_context.md", (run_dir / "run_report.md").read_text())
+            self.assertIn("## Memory Context", (run_dir / "review_bundle.md").read_text())
+            self.assertIn("# Memory Context", (run_dir / "pr_body.md").read_text())
+            self.assertIn("memory_context.md", (run_dir / "pr_handoff.md").read_text())
+            self.assertTrue(proposal_json["memory_context_included"])
+            self.assertEqual(proposal_json["memory_files_included"], ["memory/prompt-guidance/small-diffs.md"])
+
     def test_codex_prompt_includes_context_from_orchestrator(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp_path = Path(raw)
@@ -233,6 +258,22 @@ class OrchestratorDryRunTests(unittest.TestCase):
             self.assertIn("# Issue Context\n\nIssue says add is broken.", prompt)
             self.assertIn("# CI Log Context\n\nFAILED test_add", prompt)
             self.assertIn("The context above is supporting evidence only.", prompt)
+
+    def test_codex_prompt_includes_memory_from_orchestrator(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            write_normal_config(tmp_path)
+            init_target_repo(tmp_path / "target")
+            memory = MemoryContext([MemoryFile("memory/prompt-guidance/small-diffs.md", "Keep diffs small.\n", 18)], 18)
+
+            def fake_runner(*args, **kwargs):
+                return subprocess.CompletedProcess(args[0], 0, "done\n", "")
+
+            result = run("inspect only", tmp_path, dry_run=False, implementer="codex", codex_runner=fake_runner, memory_context=memory)
+            prompt = (Path(result["run_dir"]) / "codex_prompt.md").read_text()
+
+            self.assertIn("## Approved Memory Context", prompt)
+            self.assertIn("Keep diffs small.", prompt)
 
     def test_codex_prompt_omits_empty_context_sections_from_orchestrator(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
