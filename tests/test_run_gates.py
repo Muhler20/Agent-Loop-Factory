@@ -70,8 +70,30 @@ class RunGatesTests(unittest.TestCase):
             results = run_gates(config, tmp_path, tmp_path)
 
             self.assertFalse(results[0]["ok"])
-            self.assertEqual(results[0]["warning"], "command not allowed by config")
+            self.assertIn(f"command not allowed by config: {command!r}", str(results[0]["warning"]))
+            self.assertIn("allowed_commands uses exact command strings", str(results[0]["warning"]))
+            self.assertIn("different command", str(results[0]["warning"]))
             self.assertEqual(results[0]["returncode"], None)
+
+    def test_allowed_commands_requires_exact_command_string(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            config = Config(allowed_commands=["python3 -m unittest discover -s tests"], gates=["python3  -m unittest discover -s tests"])
+
+            results = run_gates(config, tmp_path, tmp_path, dry_run=True)
+
+            self.assertFalse(results[0]["ok"])
+            self.assertIn("allowed_commands uses exact command strings", str(results[0]["warning"]))
+
+    def test_named_gate_checks_command_not_name(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            config = Config(allowed_commands=["unit tests"], gates=[{"name": "unit tests", "command": "python3 -m unittest"}])
+
+            results = run_gates(config, tmp_path, tmp_path, dry_run=True)
+
+            self.assertFalse(results[0]["ok"])
+            self.assertIn("python3 -m unittest", str(results[0]["warning"]))
 
 
 if __name__ == "__main__":

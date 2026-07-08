@@ -8,10 +8,27 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from agent_loop_factory.config import Config
 from agent_loop_factory.task_spec import TaskSpec
-from agent_loop_factory.verifier import run_verifier
+from agent_loop_factory.verifier import matches_human_required_path, run_verifier
 
 
 class VerifierTests(unittest.TestCase):
+    def test_matches_human_required_directory_path(self) -> None:
+        self.assertTrue(matches_human_required_path("auth/login.py", "auth/"))
+        self.assertTrue(matches_human_required_path("auth\\login.py", "auth/"))
+        self.assertFalse(matches_human_required_path("authentication_notes.md", "auth/"))
+
+    def test_matches_human_required_exact_file(self) -> None:
+        self.assertTrue(matches_human_required_path("Dockerfile", "Dockerfile"))
+        self.assertFalse(matches_human_required_path("docs/Dockerfile", "Dockerfile"))
+
+    def test_matches_human_required_fnmatch_pattern(self) -> None:
+        self.assertTrue(matches_human_required_path("migrations/001_init.sql", "*.sql"))
+        self.assertFalse(matches_human_required_path("migrations/001_init.py", "*.sql"))
+
+    def test_matches_human_required_unrelated_path(self) -> None:
+        self.assertFalse(matches_human_required_path("src/app.py", "auth/"))
+        self.assertFalse(matches_human_required_path("src/app.py", "Dockerfile"))
+
     def test_passes_on_small_safe_diff_with_passing_gates(self) -> None:
         with repo() as tmp:
             (tmp / "app.py").write_text("print('hello')\n")

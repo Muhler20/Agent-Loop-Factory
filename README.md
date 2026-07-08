@@ -2,7 +2,7 @@
 
 `agent-loop-factory` is a supervised software-agent control loop for local coding-agent runs. It creates an isolated git worktree for a target repository, optionally asks Codex to make one small change, runs configured gates, verifies the resulting diff deterministically, writes audit artifacts, and stops for human review.
 
-It is not an autonomous coding platform. Through v9 it is local, manually triggered, and human-in-the-loop. It does not push, merge, deploy, open PRs, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, or connect to GitHub/MCP services.
+It is not an autonomous coding platform. Through v9.1 it is local, manually triggered, and human-in-the-loop. It does not push, merge, deploy, open PRs, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, or connect to GitHub/MCP services.
 
 ## What It Solves
 
@@ -16,7 +16,7 @@ Agent Loop Factory is for small, repeatable coding tasks where the target repo h
 
 ## What It Does Today
 
-Implemented through v9:
+Implemented through v9.1:
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -31,6 +31,7 @@ Implemented through v9:
 - v8 local draft PR handoff package
 - v8.1 PR handoff validation
 - v9 local issue / CI context intake
+- v9.1 config and safety hardening, plus repository test CI
 
 Current capabilities:
 
@@ -235,7 +236,9 @@ gates:
     required: false
 ```
 
-Required gate failures fail the run. Optional gate failures are recorded as warnings in `gate_results.json`, `verifier_result.json`, and `run_report.md`, but do not fail the run by themselves. `allowed_commands` checks the command string, not the display name.
+Required gate failures fail the run. Optional gate failures are recorded as warnings in `gate_results.json`, `verifier_result.json`, and `run_report.md`, but do not fail the run by themselves.
+
+`allowed_commands` uses exact command strings. A gate command must match an entry exactly; different whitespace is different. Named gates check the `command` field, not the display `name`.
 
 Default gate detection is intentionally small:
 
@@ -319,6 +322,7 @@ Current safety boundaries are local and deterministic:
 - `auto_merge: false` and `auto_deploy: false` are fixed safety expectations, not implemented automation switches.
 - The loop stops after writing artifacts for human review.
 - Draft PR handoff commands are written as text only; they are not executed.
+- Repository CI only runs `python3 -m unittest discover -s tests`; it is not webhook-based agent automation.
 
 The Codex prompt includes the task, selected skill, configured safety limits, `AGENTS.md`, and `CONSTRAINTS.md` when present. Gates and the deterministic verifier decide run success; the implementer does not.
 

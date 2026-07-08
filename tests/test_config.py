@@ -9,6 +9,11 @@ from agent_loop_factory.config import Config, detect_gates, load_config
 
 
 class ConfigTests(unittest.TestCase):
+    def test_current_agent_config_parses(self) -> None:
+        config = load_config(Path(__file__).resolve().parents[1] / ".agent" / "config.yaml")
+
+        self.assertIsInstance(config, Config)
+
     def test_load_config_defaults(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp_path = Path(raw)
@@ -100,6 +105,26 @@ class ConfigTests(unittest.TestCase):
     def test_gate_non_boolean_required_fails_clearly(self) -> None:
         with self.assertRaisesRegex(ValueError, "required must be boolean"):
             loaded_config('gates:\n  - command: "pytest"\n    required: yes\n')
+
+    def test_multiline_scalar_fails_clearly(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Multiline block scalars are not supported"):
+            loaded_config("implementer: |\n  none\n")
+
+    def test_nested_mapping_fails_clearly(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Unsupported indentation"):
+            loaded_config("metadata:\n  owner: team\n")
+
+    def test_deep_gate_mapping_fails_clearly(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Unsupported indentation"):
+            loaded_config("gates:\n  - name: unit tests\n    command:\n      value: pytest\n")
+
+    def test_malformed_list_indentation_fails_clearly(self) -> None:
+        with self.assertRaisesRegex(ValueError, "unsupported indentation"):
+            loaded_config("allowed_commands:\n - pytest\n")
+
+    def test_gate_unsupported_field_fails_clearly(self) -> None:
+        with self.assertRaisesRegex(ValueError, "unsupported field"):
+            loaded_config('gates:\n  - command: "pytest"\n    timeout: 30\n')
 
 
 def loaded_config(text: str) -> Config:

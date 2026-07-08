@@ -26,7 +26,10 @@ def run_gates(config: Config, cwd: Path, run_dir: Path, dry_run: bool = False) -
             "warning": None,
         }
         if command not in config.allowed_commands:
-            result["warning"] = "command not allowed by config"
+            result["warning"] = (
+                f"command not allowed by config: {command!r}; "
+                f"allowed_commands uses exact command strings: {config.allowed_commands!r}"
+            )
         elif dry_run:
             result["ok"] = True
             result["warning"] = "dry-run: command not executed"

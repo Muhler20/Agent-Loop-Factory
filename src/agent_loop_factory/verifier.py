@@ -148,7 +148,17 @@ def _run_dir_prefix(worktree_path: Path, run_dir: Path) -> str | None:
 
 
 def _human_required(path: str, patterns: list[str]) -> bool:
-    return any(path.startswith(pattern) if pattern.endswith("/") else fnmatch.fnmatch(path, pattern) or path == pattern for pattern in patterns)
+    return any(matches_human_required_path(path, pattern) for pattern in patterns)
+
+
+def matches_human_required_path(path: str, pattern: str) -> bool:
+    normalized_path = _normalize(path)
+    normalized_pattern = _normalize(pattern)
+    return (
+        normalized_path.startswith(normalized_pattern)
+        if normalized_pattern.endswith("/")
+        else fnmatch.fnmatch(normalized_path, normalized_pattern) or normalized_path == normalized_pattern
+    )
 
 
 def _matches_any(path: str, entries: list[str]) -> bool:
