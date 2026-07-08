@@ -20,6 +20,7 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - v9 issue / CI context intake
 - v9.1 config and safety hardening with repository test CI
 - v10 reviewable memory proposals
+- v10.1 human-approved memory registry
 
 ## Current Capabilities
 
@@ -39,24 +40,26 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - Human-readable `review_bundle.md` with checklist and conservative recommendation.
 - Local draft PR handoff artifacts: `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, and `pr_handoff_check.json`.
 - Reviewable memory proposal artifacts: `memory_proposal.md` and `memory_proposal.json`.
+- Human-approved memory registry skeleton under `memory/`.
+- Memory registry validation with `--check-memory`.
 - Run artifacts under `.agent/runs/<run_id>/`.
 - Human review boundary after every run.
 
 ## Next Recommended Milestone
 
-v10.1 human-approved memory registry.
+v10.2 explicit memory inclusion in prompts.
 
 ## Future Milestones
 
-- v10 reviewable memory proposals
-- v10.1 human-approved memory registry
-- v10.2 optional memory retrieval in prompts
-- v11 optional read-only GitHub fetch
+- v10.2 explicit memory inclusion in prompts
+- v10.3 memory hygiene checks: stale/deprecated/conflicting memory
+- v11 optional read-only GitHub issue / CI fetch using gh
 - v12 optional LLM reviewer / PR review integration
 - v13 scheduler / recurring runs
 - v14 multi-agent / parallel execution
+- v15 optional draft PR creation with explicit human command/flag
 
-These are planned milestones except v10. They are not implemented unless listed as completed.
+These are planned milestones except completed items listed above.
 
 ## Explicit Non-Goals
 
@@ -68,6 +71,7 @@ Current Agent Loop Factory does not provide:
 - auto-deploy
 - GitHub integration
 - automatic memory writes to durable project rules
+- automatic memory retrieval into prompts
 - automatic issue or CI fetching
 - PR creation
 - scheduler support

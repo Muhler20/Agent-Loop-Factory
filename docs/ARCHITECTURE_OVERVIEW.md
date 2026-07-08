@@ -67,7 +67,11 @@ Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.m
 
 ### Memory Proposals
 
-Memory proposals are deterministic, advisory run artifacts. They may suggest reusable lessons and destinations for human review, but they do not automatically modify `AGENTS.md`, `CONSTRAINTS.md`, skills, docs, task specs, future memory files, or durable project rule files.
+Memory proposals are deterministic, advisory run artifacts. They may suggest reusable lessons and destinations for human review, but they do not automatically modify `memory/`, `AGENTS.md`, `CONSTRAINTS.md`, skills, docs, task specs, or durable project rule files.
+
+### Memory Registry
+
+`memory/` is the durable registry for human-approved lessons. Humans may copy or edit accepted per-run proposals into the registry with provenance. v10.1 validates the registry shape with `--check-memory`, but it does not retrieve registry memory into prompts.
 
 ### Progress and State Memory
 
@@ -77,7 +81,7 @@ Memory proposals are deterministic, advisory run artifacts. They may suggest reu
 
 The loop stops after artifacts are written. `review_bundle.md` collects the diff summary, gates, verifier result, task guardrails, and checklist for the human decision. The draft PR handoff files provide a local title, body, suggested manual commands, and local-only handoff validation status. They are review aids only; Agent Loop Factory does not commit, push, open PRs, approve, merge, or deploy.
 
-## Current Implemented System Through v10
+## Current Implemented System Through v10.1
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -94,10 +98,11 @@ The loop stops after artifacts are written. `review_bundle.md` collects the diff
 - v9 local issue / CI context intake
 - v9.1 config and safety hardening with repository test CI
 - v10 reviewable memory proposals
+- v10.1 human-approved memory registry
 
 ## Intentionally Not Implemented Yet
 
-Agent Loop Factory does not currently implement scheduler support, GitHub webhooks, GitHub Actions integration, automatic issue or CI fetching, PR creation, Docker sandboxing, an LLM verifier, MCP/connectors, parallel agents, skill auto-selection, automatic memory writes, auto-merge, auto-deploy, publishing, or release creation.
+Agent Loop Factory does not currently implement scheduler support, GitHub webhooks, GitHub Actions integration, automatic issue or CI fetching, PR creation, Docker sandboxing, an LLM verifier, MCP/connectors, parallel agents, skill auto-selection, automatic memory writes, automatic memory retrieval, auto-merge, auto-deploy, publishing, or release creation.
 
 ## Safety Model
 
@@ -115,16 +120,17 @@ The safety model is local, supervised, and deterministic:
 - Human review before any merge, deploy, release, or external publication.
 - Draft PR handoff is local text generation only.
 - Memory proposals are advisory and require human approval before any durable rule change.
+- Memory registry entries are human-approved and are not automatically loaded into prompts.
 
 ## Future Roadmap
 
-- v10 reviewable memory proposals
-- v10.1 human-approved memory registry
-- v10.2 optional memory retrieval in prompts
-- v11 optional read-only GitHub fetch
+- v10.2 explicit memory inclusion in prompts
+- v10.3 memory hygiene checks: stale/deprecated/conflicting memory
+- v11 optional read-only GitHub issue / CI fetch using gh
 - v12 optional LLM reviewer / PR review integration
 - v13 scheduler / recurring runs
 - v14 multi-agent / parallel execution
+- v15 optional draft PR creation with explicit human command/flag
 
 These are planned milestones, not current capabilities.
 

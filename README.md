@@ -2,7 +2,7 @@
 
 `agent-loop-factory` is a supervised software-agent control loop for local coding-agent runs. It creates an isolated git worktree for a target repository, optionally asks Codex to make one small change, runs configured gates, verifies the resulting diff deterministically, writes audit artifacts, and stops for human review.
 
-It is not an autonomous coding platform. Through v10 it is local, manually triggered, and human-in-the-loop. It does not push, merge, deploy, open PRs, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, connect to GitHub/MCP services, or automatically update durable memory/rule files.
+It is not an autonomous coding platform. Through v10.1 it is local, manually triggered, and human-in-the-loop. It does not push, merge, deploy, open PRs, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, connect to GitHub/MCP services, automatically update durable memory/rule files, or automatically retrieve memory into prompts.
 
 ## What It Solves
 
@@ -16,7 +16,7 @@ Agent Loop Factory is for small, repeatable coding tasks where the target repo h
 
 ## What It Does Today
 
-Implemented through v10:
+Implemented through v10.1:
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -33,6 +33,7 @@ Implemented through v10:
 - v9 local issue / CI context intake
 - v9.1 config and safety hardening, plus repository test CI
 - v10 reviewable memory proposals
+- v10.1 human-approved memory registry
 
 Current capabilities:
 
@@ -46,6 +47,7 @@ Current capabilities:
 - Diff summary including tracked stats and untracked files.
 - Deterministic verifier results written as JSON.
 - Reviewable memory proposal artifacts that may suggest human-approved lessons.
+- Human-approved memory registry skeleton under `memory/`.
 - Human review boundary after every run.
 
 ## How The Loop Works
@@ -115,6 +117,20 @@ Task spec with the Codex implementer:
 ```bash
 python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --skill failing-test-fix --implementer codex
 ```
+
+Memory registry check:
+
+```bash
+python3 scripts/run_agent_loop.py --check-memory
+```
+
+## Memory Registry
+
+`memory/` is the durable registry for human-approved lessons. Per-run `memory_proposal.md` files are suggestions only; a human must accept, edit, or reject them.
+
+`--check-memory` validates the registry shape and small guardrails without creating a run, calling Codex, running gates, or updating `.agent/state.json` or `PROGRESS.md`.
+
+Registry memory is not automatically retrieved into Codex prompts yet.
 
 ## Local Issue / CI Context
 
@@ -297,7 +313,7 @@ The orchestrator also updates `.agent/state.json` and `PROGRESS.md`.
 
 The draft PR handoff package is local only. `pr_title.txt`, `pr_body.md`, and `pr_commands.md` prepare a human to inspect the worktree and optionally commit, push, and create a draft PR manually. `pr_handoff_check.md` and `pr_handoff_check.json` summarize local-only validation of the handoff: verifier result, required gates, review recommendation, changed files, task guardrails, reserved artifacts, worktree path, git repo state, branch, origin remote presence, and `gh` availability. Agent Loop Factory writes these suggestions, but it does not run `git commit`, `git push`, `gh pr create`, merge, or deploy. `gh` availability and origin remote presence are informational only, not blockers. Review the diff, gates, verifier result, handoff check, and changed files before using anything in `pr_commands.md`. Future draft PR automation can build on these artifacts without changing the current human review boundary.
 
-`memory_proposal.md` and `memory_proposal.json` are advisory. They may suggest reusable lessons from failed gates, verifier findings, scope violations, test weakening, or handoff warnings, but they never modify `AGENTS.md`, `CONSTRAINTS.md`, skills, docs, task specs, or future memory files automatically. See [docs/MEMORY_PROPOSALS.md](docs/MEMORY_PROPOSALS.md).
+`memory_proposal.md` and `memory_proposal.json` are advisory. They may suggest reusable lessons from failed gates, verifier findings, scope violations, test weakening, or handoff warnings, but they never modify `memory/`, `AGENTS.md`, `CONSTRAINTS.md`, skills, docs, or task specs automatically. See [docs/MEMORY_PROPOSALS.md](docs/MEMORY_PROPOSALS.md).
 
 ## Verifier Checks
 
@@ -330,6 +346,7 @@ Current safety boundaries are local and deterministic:
 - The loop stops after writing artifacts for human review.
 - Draft PR handoff commands are written as text only; they are not executed.
 - Memory proposals are written as review artifacts only; durable memory/rule files are never updated automatically.
+- Registry memory is not automatically retrieved into Codex prompts.
 - Repository CI only runs `python3 -m unittest discover -s tests`; it is not webhook-based agent automation.
 
 The Codex prompt includes the task, selected skill, configured safety limits, `AGENTS.md`, and `CONSTRAINTS.md` when present. Gates and the deterministic verifier decide run success; the implementer does not.
@@ -338,7 +355,7 @@ The Codex prompt includes the task, selected skill, configured safety limits, `A
 
 See [docs/ROADMAP.md](docs/ROADMAP.md).
 
-Planned items are not implemented unless listed above. The current implemented milestone is v10 reviewable memory proposals, not automatic memory updates, GitHub fetching, autonomous PR creation, merge, or deployment.
+Planned items are not implemented unless listed above. The current implemented milestone is v10.1 human-approved memory registry, not automatic memory retrieval, GitHub fetching, autonomous PR creation, merge, or deployment.
 
 ## Troubleshooting
 

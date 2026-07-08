@@ -29,9 +29,19 @@ Dry runs still write both memory proposal artifacts, but they do not create cand
 
 Dry-run structural verifier failures, such as `worktree unavailable`, are not treated as reusable failure lessons.
 
+## v10.1 Memory Registry
+
+`memory_proposal.md` is a suggestion. The `memory/` directory is the durable, human-approved registry.
+
+Humans decide what enters `memory/`. Accepted lessons should be edited for clarity, placed in the right category, and include provenance such as source run id, date, and reason. Broad, vague, noisy, or risky lessons should be rejected.
+
+When a lesson can be checked deterministically, prefer a verifier rule over memory.
+
+Agent Loop Factory does not automatically copy proposals into `memory/`, and it does not retrieve registry memory into Codex prompts yet.
+
 ## Applying Later
 
-A human can apply a proposal by editing an appropriate durable file, such as `CONSTRAINTS.md`, `AGENTS.md`, `skills/<skill>/SKILL.md`, `docs/TASK_SPEC_TEMPLATE.md`, `docs/LOOP_SELECTION.md`, or a future memory file. v10 does not create a memory folder, registry, index, retrieval flow, scheduler, connector, or LLM verifier.
+A human can apply a proposal by editing an appropriate durable file, such as `memory/`, `CONSTRAINTS.md`, `AGENTS.md`, `skills/<skill>/SKILL.md`, `docs/TASK_SPEC_TEMPLATE.md`, or `docs/LOOP_SELECTION.md`. v10.1 creates the memory registry structure, but no retrieval flow, scheduler, connector, or LLM verifier.
 
 ## Risks
 

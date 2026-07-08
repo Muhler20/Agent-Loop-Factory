@@ -10,21 +10,35 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from agent_loop_factory.orchestrator import run
 from agent_loop_factory.context_intake import load_context
+from agent_loop_factory.memory_registry import validate_memory_registry
 from agent_loop_factory.skill import load_skill
 from agent_loop_factory.task_spec import load_task_spec
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    task_group = parser.add_mutually_exclusive_group(required=True)
+    task_group = parser.add_mutually_exclusive_group()
     task_group.add_argument("--task")
     task_group.add_argument("--task-file", type=Path)
+    parser.add_argument("--check-memory", action="store_true")
     parser.add_argument("--implementer", choices=["none", "codex"], default="none")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--skill")
     parser.add_argument("--issue-file", type=Path)
     parser.add_argument("--ci-log-file", type=Path)
     args = parser.parse_args()
+
+    if args.check_memory:
+        result = validate_memory_registry(ROOT)
+        if result.ok:
+            print("memory registry ok")
+            return 0
+        print("memory registry invalid")
+        for error in result.errors:
+            print(f"- {error}")
+        return 1
+    if not args.task and not args.task_file:
+        parser.error("one of the arguments --task --task-file is required")
 
     try:
         task_spec = load_task_spec(args.task_file) if args.task_file else None

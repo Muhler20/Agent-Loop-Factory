@@ -1,6 +1,6 @@
 # Smoke Test Walkthrough
 
-This walkthrough documents the proven sample target repo smoke test for Agent Loop Factory v10. It uses a tiny local Python repo with one failing unittest, a task spec, optional local context files, a local skill, a named required gate, the Codex implementer, deterministic verifier artifacts, draft PR handoff artifacts, and reviewable memory proposal artifacts.
+This walkthrough documents the proven sample target repo smoke test for Agent Loop Factory v10.1. It uses a tiny local Python repo with one failing unittest, a task spec, optional local context files, a local skill, a named required gate, the Codex implementer, deterministic verifier artifacts, draft PR handoff artifacts, reviewable memory proposal artifacts, and the memory registry check.
 
 ## Paths
 
@@ -55,6 +55,12 @@ auto_deploy: false
 The important smoke-test pieces are `target_repo_path`, `worktree_base_path`, `allowed_commands`, and the named required gate `unit tests`.
 
 ## Run The Loop
+
+Optional registry check before a smoke run:
+
+```bash
+python3 scripts/run_agent_loop.py --check-memory
+```
 
 ```bash
 python3 scripts/run_agent_loop.py \
