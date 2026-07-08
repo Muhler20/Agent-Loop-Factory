@@ -19,6 +19,7 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - v8.1 PR handoff validation
 - v9 issue / CI context intake
 - v9.1 config and safety hardening with repository test CI
+- v10 reviewable memory proposals
 
 ## Current Capabilities
 
@@ -37,21 +38,25 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - Repository CI that runs only the unittest suite.
 - Human-readable `review_bundle.md` with checklist and conservative recommendation.
 - Local draft PR handoff artifacts: `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, and `pr_handoff_check.json`.
+- Reviewable memory proposal artifacts: `memory_proposal.md` and `memory_proposal.json`.
 - Run artifacts under `.agent/runs/<run_id>/`.
 - Human review boundary after every run.
 
 ## Next Recommended Milestone
 
-v10 optional explicit local GitHub fetch using `gh`, read-only, no PR creation.
+v10.1 human-approved memory registry.
 
 ## Future Milestones
 
-- v10 optional explicit local GitHub fetch using gh, read-only, no PR creation
-- v11 optional LLM reviewer or PR review integration
-- v12 scheduler / recurring runs
-- v13 multi-agent or parallel execution
+- v10 reviewable memory proposals
+- v10.1 human-approved memory registry
+- v10.2 optional memory retrieval in prompts
+- v11 optional read-only GitHub fetch
+- v12 optional LLM reviewer / PR review integration
+- v13 scheduler / recurring runs
+- v14 multi-agent / parallel execution
 
-These are planned milestones. They are not implemented in v9.1.
+These are planned milestones except v10. They are not implemented unless listed as completed.
 
 ## Explicit Non-Goals
 
@@ -62,6 +67,7 @@ Current Agent Loop Factory does not provide:
 - auto-merge
 - auto-deploy
 - GitHub integration
+- automatic memory writes to durable project rules
 - automatic issue or CI fetching
 - PR creation
 - scheduler support

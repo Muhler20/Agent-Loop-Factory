@@ -91,7 +91,7 @@ def build_prompt(task_spec: str, worktree_path: Path, config: Config, skill: Ski
 
 - Make the smallest change that satisfies the task.
 - Agent Loop Factory writes run artifacts under `.agent/runs/<run_id>/`.
-- Do not create `run_report.md`, `gate_results.json`, `verifier_result.json`, `diff_summary.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `task_spec.md`, `issue_context.md`, `ci_context.log`, `context_summary.json`, `codex_result.json`, `codex_stdout.log`, `codex_stderr.log`, `stdout.log`, or `stderr.log` inside the target repo.
+- Do not create `run_report.md`, `gate_results.json`, `verifier_result.json`, `diff_summary.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `memory_proposal.md`, `memory_proposal.json`, `task_spec.md`, `issue_context.md`, `ci_context.log`, `context_summary.json`, `codex_result.json`, `codex_stdout.log`, `codex_stderr.log`, `stdout.log`, or `stderr.log` inside the target repo.
 - Only change files needed for the task.
 - Do not push, merge, deploy, or open PRs.
 - Do not weaken tests to make gates pass.

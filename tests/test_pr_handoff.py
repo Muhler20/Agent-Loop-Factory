@@ -50,7 +50,7 @@ class PrHandoffTests(unittest.TestCase):
             body = (run_dir / "pr_body.md").read_text()
             commands = (run_dir / "pr_commands.md").read_text()
             handoff = (run_dir / "pr_handoff.md").read_text()
-            for heading in ["# Summary", "# Task", "# Skill", "# Changed Files", "# Gates", "# Verifier", "# Review", "# Safety"]:
+            for heading in ["# Summary", "# Task", "# Skill", "# Changed Files", "# Gates", "# Verifier", "# Review", "# Memory Proposal", "# Safety"]:
                 self.assertIn(heading, body)
             self.assertIn("* task source: file", body)
             self.assertIn("* skill name: failing-test-fix", body)
@@ -60,6 +60,7 @@ class PrHandoffTests(unittest.TestCase):
             self.assertIn("* name: unit tests", body)
             self.assertIn("* recommendation: ready_for_human_review", body)
             self.assertIn("* handoff check status: ready", body)
+            self.assertIn("* memory proposal: memory_proposal.md", body)
             self.assertIn("Agent Loop Factory did not push, open a PR, merge, or deploy.", body)
             self.assertIn("Review before running.", commands)
             self.assertIn("Do not run if verifier failed.", commands)
@@ -74,6 +75,8 @@ class PrHandoffTests(unittest.TestCase):
             self.assertIn("--body-file", commands)
             self.assertIn("* pr_handoff_check.md:", handoff)
             self.assertIn("* pr_handoff_check.json:", handoff)
+            self.assertIn("* memory_proposal.md:", handoff)
+            self.assertIn("* memory_proposal.json:", handoff)
             self.assertIn("* handoff check status: ready", handoff)
             self.assertIn("* no commands were executed: true", handoff)
 

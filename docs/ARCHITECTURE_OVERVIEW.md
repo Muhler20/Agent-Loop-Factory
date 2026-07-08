@@ -16,7 +16,8 @@ Agent Loop Factory is a supervised local control loop for software-agent coding 
 8. The selected implementer runs. The default is `none`; `codex` runs once when requested.
 9. Configured gates run in the worktree.
 10. The deterministic verifier inspects gates, diff size, changed files, task guardrails, sensitive paths, and test weakening signals.
-11. Artifacts and local draft PR handoff files are written, progress/state files are updated, and the loop stops.
+11. Reviewable memory proposal artifacts are generated from deterministic run facts.
+12. Artifacts and local draft PR handoff files are written, progress/state files are updated, and the loop stops.
 
 ## Core Components
 
@@ -62,7 +63,11 @@ The verifier is deterministic. It checks required gate results, changed file cou
 
 ### Artifacts
 
-Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `gate_results.json`, `verifier_result.json`, logs, `diff_summary.md`, `task_spec.md`, and `context_summary.json`. `issue_context.md` and `ci_context.log` are written when those context files are provided. Skill and Codex artifacts are written only when those features are used.
+Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `memory_proposal.md`, `memory_proposal.json`, `gate_results.json`, `verifier_result.json`, logs, `diff_summary.md`, `task_spec.md`, and `context_summary.json`. `issue_context.md` and `ci_context.log` are written when those context files are provided. Skill and Codex artifacts are written only when those features are used.
+
+### Memory Proposals
+
+Memory proposals are deterministic, advisory run artifacts. They may suggest reusable lessons and destinations for human review, but they do not automatically modify `AGENTS.md`, `CONSTRAINTS.md`, skills, docs, task specs, future memory files, or durable project rule files.
 
 ### Progress and State Memory
 
@@ -72,7 +77,7 @@ Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.m
 
 The loop stops after artifacts are written. `review_bundle.md` collects the diff summary, gates, verifier result, task guardrails, and checklist for the human decision. The draft PR handoff files provide a local title, body, suggested manual commands, and local-only handoff validation status. They are review aids only; Agent Loop Factory does not commit, push, open PRs, approve, merge, or deploy.
 
-## Current Implemented System Through v9
+## Current Implemented System Through v10
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -87,10 +92,12 @@ The loop stops after artifacts are written. `review_bundle.md` collects the diff
 - v8 local draft PR handoff package
 - v8.1 PR handoff validation
 - v9 local issue / CI context intake
+- v9.1 config and safety hardening with repository test CI
+- v10 reviewable memory proposals
 
 ## Intentionally Not Implemented Yet
 
-Agent Loop Factory does not currently implement scheduler support, GitHub webhooks, GitHub Actions integration, automatic issue or CI fetching, PR creation, Docker sandboxing, an LLM verifier, MCP/connectors, parallel agents, skill auto-selection, auto-merge, auto-deploy, publishing, or release creation.
+Agent Loop Factory does not currently implement scheduler support, GitHub webhooks, GitHub Actions integration, automatic issue or CI fetching, PR creation, Docker sandboxing, an LLM verifier, MCP/connectors, parallel agents, skill auto-selection, automatic memory writes, auto-merge, auto-deploy, publishing, or release creation.
 
 ## Safety Model
 
@@ -107,13 +114,17 @@ The safety model is local, supervised, and deterministic:
 - Deterministic verifier decides pass/fail.
 - Human review before any merge, deploy, release, or external publication.
 - Draft PR handoff is local text generation only.
+- Memory proposals are advisory and require human approval before any durable rule change.
 
 ## Future Roadmap
 
-- v9.1 optional explicit local GitHub fetch using gh, read-only, no PR creation
-- v10 optional LLM reviewer or PR review integration
-- v11 scheduler / recurring runs
-- v12 multi-agent or parallel execution
+- v10 reviewable memory proposals
+- v10.1 human-approved memory registry
+- v10.2 optional memory retrieval in prompts
+- v11 optional read-only GitHub fetch
+- v12 optional LLM reviewer / PR review integration
+- v13 scheduler / recurring runs
+- v14 multi-agent / parallel execution
 
 These are planned milestones, not current capabilities.
 

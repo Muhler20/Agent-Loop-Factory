@@ -121,6 +121,16 @@ class VerifierTests(unittest.TestCase):
                     self.assertEqual(result["reserved_artifacts_touched"], [artifact])
                     self.assertIn(f"reserved run artifact file changed in target repo: {artifact}", result["reasons"])
 
+    def test_fails_when_memory_proposal_artifacts_are_created_in_target_repo(self) -> None:
+        with repo() as tmp:
+            (tmp / "memory_proposal.md").write_text("proposal\n")
+            (tmp / "memory_proposal.json").write_text("{}\n")
+            result = verify(tmp)
+            self.assertFalse(result["ok"])
+            self.assertEqual(result["reserved_artifacts_touched"], ["memory_proposal.json", "memory_proposal.md"])
+            self.assertIn("reserved run artifact file changed in target repo: memory_proposal.md", result["reasons"])
+            self.assertIn("reserved run artifact file changed in target repo: memory_proposal.json", result["reasons"])
+
     def test_fails_when_human_required_paths_are_touched(self) -> None:
         with repo() as tmp:
             (tmp / "auth").mkdir()

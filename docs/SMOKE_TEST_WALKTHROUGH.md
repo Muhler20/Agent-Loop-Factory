@@ -1,6 +1,6 @@
 # Smoke Test Walkthrough
 
-This walkthrough documents the proven sample target repo smoke test for Agent Loop Factory v9. It uses a tiny local Python repo with one failing unittest, a task spec, optional local context files, a local skill, a named required gate, the Codex implementer, and deterministic verifier artifacts.
+This walkthrough documents the proven sample target repo smoke test for Agent Loop Factory v10. It uses a tiny local Python repo with one failing unittest, a task spec, optional local context files, a local skill, a named required gate, the Codex implementer, deterministic verifier artifacts, draft PR handoff artifacts, and reviewable memory proposal artifacts.
 
 ## Paths
 
@@ -93,6 +93,8 @@ sed -n '1,220p' .agent/runs/<run_id>/pr_commands.md
 sed -n '1,120p' .agent/runs/<run_id>/pr_handoff.md
 sed -n '1,160p' .agent/runs/<run_id>/pr_handoff_check.md
 cat .agent/runs/<run_id>/pr_handoff_check.json
+sed -n '1,180p' .agent/runs/<run_id>/memory_proposal.md
+cat .agent/runs/<run_id>/memory_proposal.json
 cat .agent/runs/<run_id>/gate_results.json
 cat .agent/runs/<run_id>/verifier_result.json
 cat .agent/runs/<run_id>/context_summary.json
@@ -118,6 +120,8 @@ Expected artifacts include:
 - `pr_handoff.md`
 - `pr_handoff_check.md`
 - `pr_handoff_check.json`
+- `memory_proposal.md`
+- `memory_proposal.json`
 - `gate_results.json`
 - `verifier_result.json`
 - `context_summary.json`
@@ -157,6 +161,13 @@ In `verifier_result.json`:
 - `task_allowed_violations` is empty
 - `task_forbidden_touched` is empty
 - `reserved_artifacts_touched` is empty
+
+In `memory_proposal.json`:
+
+- clean successful smoke runs usually have `proposal_status` set to `no_proposal`
+- `requires_human_approval` is `true`
+- `no_files_modified` is `true`
+- no durable memory or rule files are updated automatically
 
 In `gate_results.json`:
 

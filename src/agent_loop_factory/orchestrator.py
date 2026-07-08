@@ -11,6 +11,7 @@ from .codex_implementer import run_codex_implementer, write_codex_skip
 from .config import load_config
 from .context_intake import ContextData
 from .create_worktree import create_worktree
+from .memory_proposal import write_memory_proposal
 from .pr_handoff import write_pr_handoff
 from .pr_handoff_check import write_pr_handoff_check
 from .run_gates import run_gates
@@ -77,9 +78,10 @@ def run(
 
     review_recommendation, _ = recommendation(verifier_result, gates)
     handoff_check = write_pr_handoff_check(run_dir, worktree, gates, verifier_result, review_recommendation)
-    write_review_bundle(run_dir, run_id, task_spec, skill, selected_implementer, worktree, gates, verifier_result, diff_summary, ok, handoff_check["status"], context_summary)
-    write_pr_handoff(run_dir, run_id, task_spec, skill, worktree, gates, verifier_result, review_recommendation, handoff_check["status"], context_summary)
-    report = _report(task_spec, skill, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, verifier_result, diff_summary, ok, review_recommendation, handoff_check["status"], context_summary)
+    memory_proposal = write_memory_proposal(run_dir, run_id, task_spec, skill, gates, verifier_result, review_recommendation, str(handoff_check["status"]), dry_run)
+    write_review_bundle(run_dir, run_id, task_spec, skill, selected_implementer, worktree, gates, verifier_result, diff_summary, ok, handoff_check["status"], context_summary, memory_proposal)
+    write_pr_handoff(run_dir, run_id, task_spec, skill, worktree, gates, verifier_result, review_recommendation, handoff_check["status"], context_summary, memory_proposal)
+    report = _report(task_spec, skill, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, verifier_result, diff_summary, ok, review_recommendation, handoff_check["status"], context_summary, memory_proposal)
     (run_dir / "run_report.md").write_text(report)
     _update_state(agent_dir / "state.json", run_id, ok)
 
@@ -124,7 +126,7 @@ def _write_context_artifacts(run_dir: Path, run_id: str, context: ContextData | 
     return summary
 
 
-def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool, implementer: str, codex_result, config, worktree, gates, verifier_result, diff_summary: str, ok: bool, review_recommendation: str = "Unavailable", handoff_check_status: str = "Unavailable", context_summary: dict[str, object] | None = None) -> str:
+def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool, implementer: str, codex_result, config, worktree, gates, verifier_result, diff_summary: str, ok: bool, review_recommendation: str = "Unavailable", handoff_check_status: str = "Unavailable", context_summary: dict[str, object] | None = None, memory_proposal: dict[str, object] | None = None) -> str:
     warnings = [str(gate["warning"]) for gate in gates if gate.get("warning")]
     if not worktree.ok:
         warnings.append(worktree.message)
@@ -151,6 +153,7 @@ def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool
     skill_name = skill.skill_name if skill else "none"
     skill_file = f"- skill_file_path: {skill.skill_file_path}\n" if skill else ""
     context_summary = context_summary or {}
+    memory_proposal = memory_proposal or {"proposal_status": "Unavailable", "requires_human_approval": True, "no_files_modified": True}
     return f"""# Run Report
 
 ## Run
@@ -221,6 +224,14 @@ Task forbidden touched:
 
 - path: .agent/runs/{run_id}/review_bundle.md
 - recommendation: {review_recommendation}
+
+## Memory Proposal
+
+- path: .agent/runs/{run_id}/memory_proposal.md
+- json: .agent/runs/{run_id}/memory_proposal.json
+- proposal_status: {memory_proposal["proposal_status"]}
+- requires_human_approval: true
+- no files modified: true
 
 ## Draft PR Handoff
 

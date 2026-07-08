@@ -105,7 +105,7 @@ class CodexImplementerTests(unittest.TestCase):
             prompt = build_prompt("do the task", Path(raw), Config())
 
             self.assertIn("Agent Loop Factory writes run artifacts under `.agent/runs/<run_id>/`.", prompt)
-            self.assertIn("Do not create `run_report.md`, `gate_results.json`, `verifier_result.json`, `diff_summary.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `task_spec.md`", prompt)
+            self.assertIn("Do not create `run_report.md`, `gate_results.json`, `verifier_result.json`, `diff_summary.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `memory_proposal.md`, `memory_proposal.json`, `task_spec.md`", prompt)
             self.assertIn("`issue_context.md`, `ci_context.log`, `context_summary.json`", prompt)
             self.assertIn("inside the target repo", prompt)
             self.assertIn("Only change files needed for the task.", prompt)

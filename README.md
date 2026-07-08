@@ -2,7 +2,7 @@
 
 `agent-loop-factory` is a supervised software-agent control loop for local coding-agent runs. It creates an isolated git worktree for a target repository, optionally asks Codex to make one small change, runs configured gates, verifies the resulting diff deterministically, writes audit artifacts, and stops for human review.
 
-It is not an autonomous coding platform. Through v9.1 it is local, manually triggered, and human-in-the-loop. It does not push, merge, deploy, open PRs, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, or connect to GitHub/MCP services.
+It is not an autonomous coding platform. Through v10 it is local, manually triggered, and human-in-the-loop. It does not push, merge, deploy, open PRs, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, connect to GitHub/MCP services, or automatically update durable memory/rule files.
 
 ## What It Solves
 
@@ -16,7 +16,7 @@ Agent Loop Factory is for small, repeatable coding tasks where the target repo h
 
 ## What It Does Today
 
-Implemented through v9.1:
+Implemented through v10:
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -32,6 +32,7 @@ Implemented through v9.1:
 - v8.1 PR handoff validation
 - v9 local issue / CI context intake
 - v9.1 config and safety hardening, plus repository test CI
+- v10 reviewable memory proposals
 
 Current capabilities:
 
@@ -44,6 +45,7 @@ Current capabilities:
 - Required and optional named gates.
 - Diff summary including tracked stats and untracked files.
 - Deterministic verifier results written as JSON.
+- Reviewable memory proposal artifacts that may suggest human-approved lessons.
 - Human review boundary after every run.
 
 ## How The Loop Works
@@ -57,8 +59,9 @@ Current capabilities:
 7. Run the selected implementer. The default `none` makes no code changes; `codex` runs `codex exec` once inside the worktree.
 8. Run configured gates from the worktree.
 9. Run the deterministic verifier.
-10. Write audit artifacts and update `.agent/state.json` and `PROGRESS.md`.
-11. Stop for human review.
+10. Write reviewable memory proposal artifacts.
+11. Write audit artifacts and update `.agent/state.json` and `PROGRESS.md`.
+12. Stop for human review.
 
 ## Basic Dry Run
 
@@ -264,6 +267,8 @@ Each run writes:
 - `.agent/runs/<run_id>/pr_handoff.md`
 - `.agent/runs/<run_id>/pr_handoff_check.md`
 - `.agent/runs/<run_id>/pr_handoff_check.json`
+- `.agent/runs/<run_id>/memory_proposal.md`
+- `.agent/runs/<run_id>/memory_proposal.json`
 - `.agent/runs/<run_id>/task_spec.md`
 
 When `--skill` is used, the run also writes:
@@ -291,6 +296,8 @@ The orchestrator also updates `.agent/state.json` and `PROGRESS.md`.
 `review_bundle.md` is the human review artifact. It collects the task, skill, changed files, gates, verifier result, diff summary, checklist, and a conservative recommendation such as `ready_for_human_review`, `manual_review_required`, or `reject_or_rework`.
 
 The draft PR handoff package is local only. `pr_title.txt`, `pr_body.md`, and `pr_commands.md` prepare a human to inspect the worktree and optionally commit, push, and create a draft PR manually. `pr_handoff_check.md` and `pr_handoff_check.json` summarize local-only validation of the handoff: verifier result, required gates, review recommendation, changed files, task guardrails, reserved artifacts, worktree path, git repo state, branch, origin remote presence, and `gh` availability. Agent Loop Factory writes these suggestions, but it does not run `git commit`, `git push`, `gh pr create`, merge, or deploy. `gh` availability and origin remote presence are informational only, not blockers. Review the diff, gates, verifier result, handoff check, and changed files before using anything in `pr_commands.md`. Future draft PR automation can build on these artifacts without changing the current human review boundary.
+
+`memory_proposal.md` and `memory_proposal.json` are advisory. They may suggest reusable lessons from failed gates, verifier findings, scope violations, test weakening, or handoff warnings, but they never modify `AGENTS.md`, `CONSTRAINTS.md`, skills, docs, task specs, or future memory files automatically. See [docs/MEMORY_PROPOSALS.md](docs/MEMORY_PROPOSALS.md).
 
 ## Verifier Checks
 
@@ -322,6 +329,7 @@ Current safety boundaries are local and deterministic:
 - `auto_merge: false` and `auto_deploy: false` are fixed safety expectations, not implemented automation switches.
 - The loop stops after writing artifacts for human review.
 - Draft PR handoff commands are written as text only; they are not executed.
+- Memory proposals are written as review artifacts only; durable memory/rule files are never updated automatically.
 - Repository CI only runs `python3 -m unittest discover -s tests`; it is not webhook-based agent automation.
 
 The Codex prompt includes the task, selected skill, configured safety limits, `AGENTS.md`, and `CONSTRAINTS.md` when present. Gates and the deterministic verifier decide run success; the implementer does not.
@@ -330,7 +338,7 @@ The Codex prompt includes the task, selected skill, configured safety limits, `A
 
 See [docs/ROADMAP.md](docs/ROADMAP.md).
 
-Planned items are not implemented unless listed above. The current implemented milestone is v9 local issue / CI context intake, not GitHub fetching, autonomous PR creation, merge, or deployment.
+Planned items are not implemented unless listed above. The current implemented milestone is v10 reviewable memory proposals, not automatic memory updates, GitHub fetching, autonomous PR creation, merge, or deployment.
 
 ## Troubleshooting
 

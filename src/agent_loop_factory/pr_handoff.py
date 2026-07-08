@@ -18,12 +18,13 @@ def write_pr_handoff(
     recommendation: str,
     handoff_check_status: str = "Unavailable",
     context_summary: dict[str, object] | None = None,
+    memory_proposal: dict[str, object] | None = None,
 ) -> None:
     title = pr_title(run_id, task_spec)
     (run_dir / "pr_title.txt").write_text(title + "\n")
-    (run_dir / "pr_body.md").write_text(build_pr_body(task_spec, skill, gates, verifier_result, recommendation, handoff_check_status, context_summary))
+    (run_dir / "pr_body.md").write_text(build_pr_body(task_spec, skill, gates, verifier_result, recommendation, handoff_check_status, context_summary, memory_proposal))
     (run_dir / "pr_commands.md").write_text(build_pr_commands(run_dir, title, worktree, verifier_result))
-    (run_dir / "pr_handoff.md").write_text(build_pr_handoff(run_dir, recommendation, handoff_check_status, context_summary))
+    (run_dir / "pr_handoff.md").write_text(build_pr_handoff(run_dir, recommendation, handoff_check_status, context_summary, memory_proposal))
 
 
 def pr_title(run_id: str, task_spec: TaskSpec) -> str:
@@ -40,9 +41,11 @@ def build_pr_body(
     recommendation: str,
     handoff_check_status: str = "Unavailable",
     context_summary: dict[str, object] | None = None,
+    memory_proposal: dict[str, object] | None = None,
 ) -> str:
     task_source = "file" if task_spec.task_file_path else "inline"
     context_summary = context_summary or {}
+    proposal_status = (memory_proposal or {}).get("proposal_status", "Unavailable")
     return f"""# Summary
 
 {task_spec.task_title or task_spec.task_body or "Agent Loop Factory run"}
@@ -102,6 +105,11 @@ def build_pr_body(
 * handoff check: pr_handoff_check.md
 * handoff check json: pr_handoff_check.json
 * handoff check status: {handoff_check_status}
+
+# Memory Proposal
+
+* memory proposal: memory_proposal.md
+* proposal status: {proposal_status}
 
 # Safety
 
@@ -167,8 +175,9 @@ gh pr create \\
 """
 
 
-def build_pr_handoff(run_dir: Path, recommendation: str, handoff_check_status: str = "Unavailable", context_summary: dict[str, object] | None = None) -> str:
+def build_pr_handoff(run_dir: Path, recommendation: str, handoff_check_status: str = "Unavailable", context_summary: dict[str, object] | None = None, memory_proposal: dict[str, object] | None = None) -> str:
     context_summary = context_summary or {}
+    proposal_status = (memory_proposal or {}).get("proposal_status", "Unavailable")
     return f"""# Draft PR Handoff
 
 * pr_title.txt: {run_dir / "pr_title.txt"}
@@ -176,11 +185,14 @@ def build_pr_handoff(run_dir: Path, recommendation: str, handoff_check_status: s
 * pr_commands.md: {run_dir / "pr_commands.md"}
 * pr_handoff_check.md: {run_dir / "pr_handoff_check.md"}
 * pr_handoff_check.json: {run_dir / "pr_handoff_check.json"}
+* memory_proposal.md: {run_dir / "memory_proposal.md"}
+* memory_proposal.json: {run_dir / "memory_proposal.json"}
 * issue_context.md: {_none(context_summary.get("issue_artifact_path"))}
 * ci_context.log: {_none(context_summary.get("ci_log_artifact_path"))}
 * context_summary.json: {_none(context_summary.get("context_summary_path"))}
 * recommendation: {recommendation}
 * handoff check status: {handoff_check_status}
+* memory proposal status: {proposal_status}
 * no commands were executed: true
 """
 

@@ -23,6 +23,8 @@ RESERVED_ARTIFACT_FILENAMES = {
     "pr_handoff.md",
     "pr_handoff_check.md",
     "pr_handoff_check.json",
+    "memory_proposal.md",
+    "memory_proposal.json",
     "task_spec.md",
     "issue_context.md",
     "ci_context.log",
