@@ -45,9 +45,15 @@ Agent Loop Factory does not automatically copy proposals into `memory/`. Registr
 
 The loop does not search, rank, retrieve, or auto-select memory. Included memory is guidance only and cannot override task specs, allowed/forbidden files, `CONSTRAINTS.md`, `AGENTS.md`, `human_required_paths`, gates, verifier rules, or no-push/no-PR/no-deploy boundaries. Runs do not modify memory files.
 
+## v10.3 Memory Hygiene Checks
+
+`--check-memory` validates active memory files under `memory/failure-patterns/`, `memory/prompt-guidance/`, and `memory/reviewer-guidance/` for required metadata and sections. Stale `last_reviewed` dates, duplicate active H1 titles, deprecated status outside `memory/deprecated/`, and conservative title conflicts are warnings, not failures.
+
+Explicit `--memory-file` inclusion still requires human selection. Active memory files with hygiene errors are rejected; warning-only issues do not block inclusion. The loop still does not auto-retrieve, rank, modify, apply, or copy memory.
+
 ## Applying Later
 
-A human can apply a proposal by editing an appropriate durable file, such as `memory/`, `CONSTRAINTS.md`, `AGENTS.md`, `skills/<skill>/SKILL.md`, `docs/TASK_SPEC_TEMPLATE.md`, or `docs/LOOP_SELECTION.md`. v10.2 adds explicit memory inclusion, but no automatic retrieval flow, scheduler, connector, or LLM verifier.
+A human can apply a proposal by editing an appropriate durable file, such as `memory/`, `CONSTRAINTS.md`, `AGENTS.md`, `skills/<skill>/SKILL.md`, `docs/TASK_SPEC_TEMPLATE.md`, or `docs/LOOP_SELECTION.md`. v10.3 adds memory hygiene checks, but no automatic retrieval flow, scheduler, connector, or LLM verifier.
 
 ## Risks
 

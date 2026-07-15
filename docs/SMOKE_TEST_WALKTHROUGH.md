@@ -62,6 +62,14 @@ Optional registry check before a smoke run:
 python3 scripts/run_agent_loop.py --check-memory
 ```
 
+Expected clean output:
+
+```text
+memory registry ok
+```
+
+Warnings such as stale memory or duplicate active titles print `memory registry ok with warnings` and still exit 0.
+
 ```bash
 python3 scripts/run_agent_loop.py \
   --task-file tasks/fix-sample-add.md \
@@ -90,7 +98,7 @@ python3 scripts/run_agent_loop.py \
   --implementer codex
 ```
 
-Memory files must be named by the human. The loop does not search, rank, retrieve, or auto-select memory.
+Memory files must be named by the human. The loop validates active memory hygiene, rejects deprecated files, and does not search, rank, retrieve, auto-select, auto-apply, or modify memory.
 
 The command prints:
 

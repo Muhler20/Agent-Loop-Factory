@@ -48,7 +48,7 @@ A skill is an explicitly selected local playbook at `skills/<skill_name>/SKILL.m
 
 ### Memory Context
 
-`--memory-file` is a repeatable CLI flag for explicitly including human-approved Markdown files from `memory/` in the Codex prompt. The loop validates paths and writes `memory_context.md` and `memory_context.json` for the run. It does not search, rank, retrieve, auto-select, or modify memory files. Included memory is guidance only; task specs, constraints, human-required paths, gates, verifier rules, and approval boundaries still win.
+`--memory-file` is a repeatable CLI flag for explicitly including human-approved Markdown files from `memory/` in the Codex prompt. The loop validates paths, active memory hygiene, and writes `memory_context.md` and `memory_context.json` for the run. It does not search, rank, retrieve, auto-select, auto-apply, or modify memory files. Included memory is guidance only; task specs, constraints, human-required paths, gates, verifier rules, and approval boundaries still win.
 
 ### Worktree Isolation
 
@@ -76,7 +76,7 @@ Memory proposals are deterministic, advisory run artifacts. They may suggest reu
 
 ### Memory Registry
 
-`memory/` is the durable registry for human-approved lessons. Humans may copy or edit accepted per-run proposals into the registry with provenance. `--check-memory` validates the registry shape. `--memory-file` can include named registry files in a run, but only when a human explicitly provides the paths.
+`memory/` is the durable registry for human-approved lessons. Humans may copy or edit accepted per-run proposals into the registry with provenance. `--check-memory` validates the registry shape, active memory metadata, and required sections. Stale memory, duplicate active titles, deprecated placement, and small conservative conflict signals warn without failing. `--memory-file` can include named registry files in a run, but only when a human explicitly provides the paths.
 
 ### Progress and State Memory
 
@@ -86,7 +86,7 @@ Memory proposals are deterministic, advisory run artifacts. They may suggest reu
 
 The loop stops after artifacts are written. `review_bundle.md` collects the diff summary, gates, verifier result, task guardrails, and checklist for the human decision. The draft PR handoff files provide a local title, body, suggested manual commands, and local-only handoff validation status. They are review aids only; Agent Loop Factory does not commit, push, open PRs, approve, merge, or deploy.
 
-## Current Implemented System Through v10.2
+## Current Implemented System Through v10.3
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -105,6 +105,7 @@ The loop stops after artifacts are written. `review_bundle.md` collects the diff
 - v10 reviewable memory proposals
 - v10.1 human-approved memory registry
 - v10.2 explicit memory inclusion in prompts
+- v10.3 memory hygiene checks
 
 ## Intentionally Not Implemented Yet
 
@@ -126,11 +127,10 @@ The safety model is local, supervised, and deterministic:
 - Human review before any merge, deploy, release, or external publication.
 - Draft PR handoff is local text generation only.
 - Memory proposals are advisory and require human approval before any durable rule change.
-- Memory registry entries are human-approved and are loaded into prompts only when explicitly named with `--memory-file`.
+- Memory registry entries are human-approved, hygiene-checked, and loaded into prompts only when explicitly named with `--memory-file`.
 
 ## Future Roadmap
 
-- v10.3 memory hygiene checks: stale/deprecated/conflicting memory
 - v11 optional read-only GitHub issue / CI fetch using gh
 - v12 optional LLM reviewer / PR review integration
 - v13 scheduler / recurring runs

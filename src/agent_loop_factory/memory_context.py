@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from .memory_registry import SECRET_MARKERS
+from .memory_registry import SECRET_MARKERS, validate_memory_file_hygiene
 
 MAX_MEMORY_FILE_BYTES = 25 * 1024
 MAX_TOTAL_MEMORY_BYTES = 50 * 1024
@@ -72,6 +72,9 @@ def load_memory_context(repo_root: Path, paths: list[Path] | None) -> MemoryCont
         for marker in SECRET_MARKERS:
             if marker in content:
                 raise ValueError(f"secret-like marker in {_display_path(repo_root, path)}: {marker}")
+        hygiene_errors, _ = validate_memory_file_hygiene(repo_root, path, content)
+        if hygiene_errors:
+            raise ValueError(f"invalid memory file {_display_path(repo_root, path)}: {'; '.join(hygiene_errors)}")
         files.append(MemoryFile(_display_path(repo_root, path), content, size))
 
     return MemoryContext(files, total)

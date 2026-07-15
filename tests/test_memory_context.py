@@ -9,24 +9,56 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from agent_loop_factory.memory_context import MAX_MEMORY_FILE_BYTES, MAX_TOTAL_MEMORY_BYTES, load_memory_context, write_memory_context
 
 
+def valid_memory(category: str = "prompt-guidance", reviewed: str = "2099-01-01", pad: int = 0) -> str:
+    return f"""# Keep Diffs Small
+status: active
+category: {category}
+source_run_id: run-1
+created: 2099-01-01
+last_reviewed: {reviewed}
+confidence: high
+
+## Lesson
+
+Keep diffs small.
+
+## Evidence
+
+Observed in run-1.
+
+## When To Apply
+
+Use for small tasks.
+
+## When Not To Apply
+
+Do not use when a larger redesign is requested.
+
+## Suggested Enforcement
+
+Review the diff.
+{"x" * pad}
+"""
+
+
 class MemoryContextTests(unittest.TestCase):
     def test_one_valid_memory_file_is_accepted(self) -> None:
         with repo() as root:
             path = root / "memory" / "prompt-guidance" / "small-diffs.md"
-            path.write_text("Keep diffs small.\n")
+            path.write_text(valid_memory())
 
             context = load_memory_context(root, [Path("memory/prompt-guidance/small-diffs.md")])
 
             self.assertIsNotNone(context)
             self.assertEqual(context.paths, ["memory/prompt-guidance/small-diffs.md"])
-            self.assertEqual(context.files[0].content, "Keep diffs small.\n")
+            self.assertIn("Keep diffs small.", context.files[0].content)
 
     def test_multiple_valid_memory_files_are_accepted(self) -> None:
         with repo() as root:
             first = root / "memory" / "prompt-guidance" / "small-diffs.md"
             second = root / "memory" / "failure-patterns" / "test-weakening.md"
-            first.write_text("Small diffs.\n")
-            second.write_text("Never weaken tests.\n")
+            first.write_text(valid_memory())
+            second.write_text(valid_memory(category="failure-pattern"))
 
             context = load_memory_context(root, [first, second])
 
@@ -77,16 +109,16 @@ class MemoryContextTests(unittest.TestCase):
             first = root / "memory" / "prompt-guidance" / "first.md"
             second = root / "memory" / "prompt-guidance" / "second.md"
             third = root / "memory" / "prompt-guidance" / "third.md"
-            first.write_text("x" * 20_000)
-            second.write_text("x" * 20_000)
-            third.write_text("x" * 20_001)
+            first.write_text(valid_memory(pad=19_500))
+            second.write_text(valid_memory(pad=19_500))
+            third.write_text(valid_memory(pad=19_501))
             with self.assertRaisesRegex(ValueError, "total memory context too large"):
                 load_memory_context(root, [first, second, third])
 
     def test_duplicate_memory_file_fails(self) -> None:
         with repo() as root:
             path = root / "memory" / "prompt-guidance" / "small-diffs.md"
-            path.write_text("Small.\n")
+            path.write_text(valid_memory())
             with self.assertRaisesRegex(ValueError, "duplicate memory file"):
                 load_memory_context(root, [path, path])
 
@@ -97,12 +129,28 @@ class MemoryContextTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "secret-like marker"):
                 load_memory_context(root, [path])
 
+    def test_hygiene_error_fails_memory_file(self) -> None:
+        with repo() as root:
+            path = root / "memory" / "prompt-guidance" / "bad.md"
+            path.write_text(valid_memory().replace("status: active\n", ""))
+            with self.assertRaisesRegex(ValueError, "missing metadata status"):
+                load_memory_context(root, [path])
+
+    def test_hygiene_warning_allows_memory_file(self) -> None:
+        with repo() as root:
+            path = root / "memory" / "prompt-guidance" / "stale.md"
+            path.write_text(valid_memory(reviewed="2000-01-01"))
+
+            context = load_memory_context(root, [path])
+
+            self.assertEqual(context.paths, ["memory/prompt-guidance/stale.md"])
+
     def test_writes_memory_context_artifacts(self) -> None:
         with repo() as root:
             run_dir = root / ".agent" / "runs" / "run-1"
             run_dir.mkdir(parents=True)
             path = root / "memory" / "prompt-guidance" / "small-diffs.md"
-            path.write_text("Small diffs.\n")
+            path.write_text(valid_memory())
             context = load_memory_context(root, [path])
 
             summary = write_memory_context(run_dir, "run-1", context)
@@ -117,7 +165,7 @@ class MemoryContextTests(unittest.TestCase):
             self.assertEqual(summary["memory_context_path"], ".agent/runs/run-1/memory_context.md")
             self.assertIn("# Memory Context", markdown)
             self.assertIn("### memory/prompt-guidance/small-diffs.md", markdown)
-            self.assertIn("Small diffs.", markdown)
+            self.assertIn("Keep diffs small.", markdown)
 
 
 class repo:

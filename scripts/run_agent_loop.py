@@ -33,7 +33,9 @@ def main() -> int:
     if args.check_memory:
         result = validate_memory_registry(ROOT)
         if result.ok:
-            print("memory registry ok")
+            print("memory registry ok with warnings" if result.warnings else "memory registry ok")
+            for warning in result.warnings:
+                print(f"- {warning}")
             return 0
         print("memory registry invalid")
         for error in result.errors:

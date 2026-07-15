@@ -23,6 +23,37 @@ def write_valid_registry(root: Path) -> None:
     (memory / "MEMORY_TEMPLATE.md").write_text("# <Memory Title>\n")
 
 
+def valid_memory(category: str = "prompt-guidance", title: str = "Keep Diffs Small", reviewed: str = "2099-01-01", extra: str = "") -> str:
+    return f"""# {title}
+status: active
+category: {category}
+source_run_id: run-1
+created: 2099-01-01
+last_reviewed: {reviewed}
+confidence: high
+{extra}
+## Lesson
+
+Keep the diff small.
+
+## Evidence
+
+Observed in run-1.
+
+## When To Apply
+
+Use for small tasks.
+
+## When Not To Apply
+
+Do not use when a larger redesign is requested.
+
+## Suggested Enforcement
+
+Review the diff.
+"""
+
+
 def load_cli_module():
     spec = importlib.util.spec_from_file_location("run_agent_loop_cli_memory", ROOT / "scripts" / "run_agent_loop.py")
     module = importlib.util.module_from_spec(spec)
@@ -36,6 +67,18 @@ class MemoryRegistryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             write_valid_registry(root)
+
+            result = validate_memory_registry(root)
+
+            self.assertTrue(result.ok)
+            self.assertEqual(result.errors, [])
+            self.assertEqual(result.warnings, [])
+
+    def test_valid_active_memory_file_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            write_valid_registry(root)
+            (root / "memory" / "prompt-guidance" / "small-diffs.md").write_text(valid_memory())
 
             result = validate_memory_registry(root)
 
@@ -98,6 +141,114 @@ class MemoryRegistryTests(unittest.TestCase):
             self.assertFalse(result.ok)
             self.assertTrue(any(error.startswith("file too large: memory/reviewer-guidance/large.md") for error in result.errors))
 
+    def test_missing_required_metadata_fails(self) -> None:
+        for field in ("status", "category", "source_run_id", "created", "last_reviewed", "confidence"):
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                write_valid_registry(root)
+                lines = [line for line in valid_memory().splitlines() if not line.startswith(f"{field}:")]
+                (root / "memory" / "prompt-guidance" / "bad.md").write_text("\n".join(lines) + "\n")
+
+                result = validate_memory_registry(root)
+
+                self.assertFalse(result.ok)
+                self.assertIn(f"missing metadata {field}: memory/prompt-guidance/bad.md", result.errors)
+
+    def test_invalid_metadata_values_fail(self) -> None:
+        cases = (
+            ("status: nope", "invalid status"),
+            ("category: nope", "invalid category"),
+            ("confidence: nope", "invalid confidence"),
+        )
+        for replacement, message in cases:
+            with self.subTest(replacement=replacement), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                write_valid_registry(root)
+                text = valid_memory().replace(replacement.split(":")[0] + ": " + {"status": "active", "category": "prompt-guidance", "confidence": "high"}[replacement.split(":")[0]], replacement)
+                (root / "memory" / "prompt-guidance" / "bad.md").write_text(text)
+
+                result = validate_memory_registry(root)
+
+                self.assertFalse(result.ok)
+                self.assertTrue(any(message in error for error in result.errors))
+
+    def test_category_mismatch_with_directory_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            write_valid_registry(root)
+            (root / "memory" / "failure-patterns" / "bad.md").write_text(valid_memory(category="prompt-guidance"))
+
+            result = validate_memory_registry(root)
+
+            self.assertFalse(result.ok)
+            self.assertIn("category mismatch in memory/failure-patterns/bad.md: expected failure-pattern, got prompt-guidance", result.errors)
+
+    def test_missing_required_sections_fail(self) -> None:
+        for section in ("## Lesson", "## Evidence", "## When To Apply", "## When Not To Apply", "## Suggested Enforcement"):
+            with self.subTest(section=section), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                write_valid_registry(root)
+                (root / "memory" / "prompt-guidance" / "bad.md").write_text(valid_memory().replace(section, "## Missing"))
+
+                result = validate_memory_registry(root)
+
+                self.assertFalse(result.ok)
+                self.assertIn(f"missing section {section}: memory/prompt-guidance/bad.md", result.errors)
+
+    def test_warning_only_hygiene_cases_pass(self) -> None:
+        cases = (
+            ("deprecated.md", valid_memory().replace("status: active", "status: deprecated"), "deprecated status outside memory/deprecated/"),
+            ("superseded.md", valid_memory().replace("status: active", "status: superseded"), "superseded memory missing superseded-by"),
+            ("stale.md", valid_memory(reviewed="2000-01-01"), "last_reviewed older than 180 days"),
+            ("bad-date.md", valid_memory(reviewed="not-a-date"), "last_reviewed is not YYYY-MM-DD"),
+        )
+        for filename, text, warning in cases:
+            with self.subTest(filename=filename), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                write_valid_registry(root)
+                (root / "memory" / "prompt-guidance" / filename).write_text(text)
+
+                result = validate_memory_registry(root)
+
+                self.assertTrue(result.ok)
+                self.assertTrue(any(warning in item for item in result.warnings))
+
+    def test_duplicate_active_h1_title_warns(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            write_valid_registry(root)
+            (root / "memory" / "prompt-guidance" / "a.md").write_text(valid_memory(title="Same"))
+            (root / "memory" / "reviewer-guidance" / "b.md").write_text(valid_memory(category="reviewer-guidance", title="Same"))
+
+            result = validate_memory_registry(root)
+
+            self.assertTrue(result.ok)
+            self.assertTrue(any("duplicate active memory title: Same" in warning for warning in result.warnings))
+
+    def test_same_h1_title_in_active_and_deprecated_warns(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            write_valid_registry(root)
+            (root / "memory" / "prompt-guidance" / "a.md").write_text(valid_memory(title="Old Lesson"))
+            (root / "memory" / "deprecated" / "old.md").write_text("# Old Lesson\n")
+
+            result = validate_memory_registry(root)
+
+            self.assertTrue(result.ok)
+            self.assertTrue(any("active memory title also exists in deprecated memory: Old Lesson" in warning for warning in result.warnings))
+
+    def test_never_always_same_title_warns(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            write_valid_registry(root)
+            (root / "memory" / "prompt-guidance" / "a.md").write_text(valid_memory(title="Rule").replace("Keep the diff small.", "Never weaken tests."))
+            (root / "memory" / "reviewer-guidance" / "b.md").write_text(valid_memory(category="reviewer-guidance", title="Rule").replace("Keep the diff small.", "Always weaken tests."))
+
+            result = validate_memory_registry(root)
+
+            self.assertTrue(result.ok)
+            self.assertTrue(any("possible always/never conflict for active memory title: Rule" in warning for warning in result.warnings))
+
     def test_check_memory_exits_zero_for_valid_registry(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
@@ -107,6 +258,18 @@ class MemoryRegistryTests(unittest.TestCase):
 
             self.assertEqual(code, 0)
             self.assertIn("memory registry ok", stdout)
+
+    def test_check_memory_prints_warnings_and_exits_zero(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            write_valid_registry(root)
+            (root / "memory" / "prompt-guidance" / "stale.md").write_text(valid_memory(reviewed="2000-01-01"))
+
+            code, stdout = self.run_check_memory(root)
+
+            self.assertEqual(code, 0)
+            self.assertIn("memory registry ok with warnings", stdout)
+            self.assertIn("last_reviewed older than 180 days", stdout)
 
     def test_check_memory_exits_nonzero_for_invalid_registry(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

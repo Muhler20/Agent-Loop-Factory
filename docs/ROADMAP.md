@@ -22,6 +22,7 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - v10 reviewable memory proposals
 - v10.1 human-approved memory registry
 - v10.2 explicit memory inclusion in prompts
+- v10.3 memory hygiene checks
 
 ## Current Capabilities
 
@@ -42,18 +43,17 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - Local draft PR handoff artifacts: `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, and `pr_handoff_check.json`.
 - Reviewable memory proposal artifacts: `memory_proposal.md` and `memory_proposal.json`.
 - Human-approved memory registry skeleton under `memory/`.
-- Memory registry validation with `--check-memory`.
+- Memory registry validation with `--check-memory`, including active memory metadata and section hygiene.
 - Explicit human-selected memory prompt inclusion with `--memory-file`.
 - Run artifacts under `.agent/runs/<run_id>/`.
 - Human review boundary after every run.
 
 ## Next Recommended Milestone
 
-v10.3 memory hygiene checks: stale/deprecated/conflicting memory.
+v11 optional read-only GitHub issue / CI fetch using gh.
 
 ## Future Milestones
 
-- v10.3 memory hygiene checks: stale/deprecated/conflicting memory
 - v11 optional read-only GitHub issue / CI fetch using gh
 - v12 optional LLM reviewer / PR review integration
 - v13 scheduler / recurring runs

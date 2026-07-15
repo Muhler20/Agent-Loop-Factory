@@ -20,7 +20,7 @@ Use repeatable `--memory-file` flags to include approved memory in a run:
 python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --memory-file memory/prompt-guidance/small-diffs.md
 ```
 
-The loop does not search, rank, retrieve, or auto-select memory. Included memory is guidance only; task specs, constraints, gates, verifier rules, and human approval boundaries still win. Runs do not modify memory files.
+The loop does not search, rank, retrieve, auto-select, auto-apply, or modify memory. Included memory is guidance only; task specs, constraints, gates, verifier rules, and human approval boundaries still win.
 
 ## Current Categories
 
@@ -37,6 +37,12 @@ The loop does not search, rank, retrieve, or auto-select memory. Included memory
 4. If accepted, create or edit a file under `memory/`.
 5. Include provenance: source run_id, date, and reason.
 6. Commit the memory change like normal code.
+
+## Hygiene
+
+Active Markdown files under `failure-patterns/`, `prompt-guidance/`, and `reviewer-guidance/` must follow `MEMORY_TEMPLATE.md`: required metadata near the top, then `## Lesson`, `## Evidence`, `## When To Apply`, `## When Not To Apply`, and `## Suggested Enforcement`.
+
+`--check-memory` fails on missing or invalid active metadata and sections. Stale `last_reviewed` dates, duplicate active titles, `status: deprecated` outside `deprecated/`, and conservative title conflicts warn without failing. Deprecated memories should live under `memory/deprecated/`.
 
 ## Rules
 

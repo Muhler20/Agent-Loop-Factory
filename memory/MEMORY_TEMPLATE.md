@@ -1,11 +1,11 @@
 # <Memory Title>
 
-- status: active | deprecated | superseded
-- category: failure-pattern | prompt-guidance | reviewer-guidance
-- source_run_id:
-- created:
-- last_reviewed:
-- confidence: low | medium | high
+status: active
+category: failure-pattern | prompt-guidance | reviewer-guidance
+source_run_id:
+created: YYYY-MM-DD
+last_reviewed: YYYY-MM-DD
+confidence: low | medium | high
 
 ## Lesson
 

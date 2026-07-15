@@ -142,11 +142,11 @@ python3 scripts/run_agent_loop.py --check-memory
 
 `memory/` is the durable registry for human-approved lessons. Per-run `memory_proposal.md` files are suggestions only; a human must accept, edit, or reject them.
 
-`--check-memory` validates the registry shape and small guardrails without creating a run, calling Codex, running gates, or updating `.agent/state.json` or `PROGRESS.md`.
+`--check-memory` validates the registry shape, active memory metadata, required sections, size limits, and simple secret markers without creating a run, calling Codex, running gates, or updating `.agent/state.json` or `PROGRESS.md`. Stale memories, duplicate active titles, deprecated entries outside `memory/deprecated/`, and small conservative conflict signals warn without failing.
 
-`--memory-file PATH` may be repeated to include human-approved Markdown files from `memory/` in the Codex prompt. The loop validates that each file is under `memory/`, outside `memory/deprecated/`, UTF-8, `.md`, small enough, non-duplicated, and free of the same simple secret markers used by `--check-memory`.
+`--memory-file PATH` may be repeated to include human-approved Markdown files from `memory/` in the Codex prompt. The loop validates that each file is under `memory/`, outside `memory/deprecated/`, UTF-8, `.md`, small enough, non-duplicated, free of the same simple secret markers used by `--check-memory`, and valid under active memory hygiene rules when it is in an active category.
 
-Memory inclusion is human-selected only. The loop does not search, rank, retrieve, or auto-select memory. Included memory is guidance only; task specs, allowed/forbidden files, `CONSTRAINTS.md`, `AGENTS.md`, `human_required_paths`, gates, verifier rules, and no-push/no-PR/no-deploy boundaries still win. Runs do not modify memory files.
+Memory inclusion is human-selected only. The loop does not search, rank, retrieve, auto-select, auto-apply, or modify memory. Included memory is guidance only; task specs, allowed/forbidden files, `CONSTRAINTS.md`, `AGENTS.md`, `human_required_paths`, gates, verifier rules, and no-push/no-PR/no-deploy boundaries still win.
 
 ## Local Issue / CI Context
 
