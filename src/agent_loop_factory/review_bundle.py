@@ -246,6 +246,13 @@ def _github_context(github_summary: dict[str, object] | None) -> str:
 def _advisory_context(advisory_review: dict[str, object] | None) -> str:
     if not advisory_review:
         return ""
+    rubric = ""
+    if advisory_review.get("reviewer_rubric_included"):
+        rubric = f"""- Reviewer rubric was explicitly selected.
+- See advisory_review_rubric.md / advisory_review_rubric.json.
+- Rubric source: {advisory_review.get("reviewer_rubric_path")}
+- Automatic rubric selection: false
+"""
     return f"""## Advisory Review
 
 - Advisory review was run.
@@ -253,4 +260,5 @@ def _advisory_context(advisory_review: dict[str, object] | None) -> str:
 - It does not affect verifier_result.json.
 - See advisory_review.md and advisory_review.json.
 - Recommendation: {advisory_review.get("recommendation")}
+{rubric}
 """

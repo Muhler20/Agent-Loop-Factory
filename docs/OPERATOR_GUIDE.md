@@ -49,6 +49,7 @@ Prefer a read-only-scoped GitHub token or account when practical.
 - `--memory-file`: include one explicit human-approved memory file from `memory/`; repeat when needed.
 - `--implementer codex`: ask Codex to make one attempt in the worktree.
 - `--advisory-reviewer codex`: ask Codex for an advisory-only second opinion after deterministic facts exist.
+- `--reviewer-rubric reviewers/<rubric>.md`: include one explicit human-written rubric for the advisory reviewer.
 - `--dry-run`: validate the run setup without creating a worktree or running gates.
 - `--check-memory`: validate the memory registry without creating a run or changing progress.
 
@@ -117,6 +118,17 @@ python3 scripts/run_agent_loop.py \
 
 The advisory reviewer is a skeptical note-taker. It runs after gates, verifier, review recommendation, and PR handoff validation facts exist. It does not affect `verifier_result.json`, does not replace gates or human review, and must not modify files. Malformed reviewer output is preserved and marked `reviewer_output_unparseable`.
 
+Optional advisory review with a rubric:
+
+```bash
+python3 scripts/run_agent_loop.py \
+  --task-file tasks/fix-sample-add.md \
+  --advisory-reviewer codex \
+  --reviewer-rubric reviewers/safety-reviewer.md
+```
+
+Rubrics under `reviewers/` are human-authored advisory guidance only. The loop validates the selected file and writes rubric receipt artifacts when used, but it does not auto-select, rank, retrieve, or apply rubrics.
+
 ## Reviewing A Run
 
 Review artifacts in this order:
@@ -129,8 +141,9 @@ Review artifacts in this order:
 6. `pr_handoff_check.md`
 7. `pr_body.md` / `pr_handoff.md`
 8. `advisory_review.md` / `advisory_review.json`, if present
-9. `memory_proposal.md`
-10. context artifacts, if present
+9. `advisory_review_rubric.md` / `advisory_review_rubric.json`, if present
+10. `memory_proposal.md`
+11. context artifacts, if present
 
 ## Deciding What To Do After A Run
 

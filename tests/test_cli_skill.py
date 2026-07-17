@@ -186,6 +186,73 @@ class CliSkillTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(calls[0][1]["advisory_reviewer"], "codex")
 
+    def test_reviewer_rubric_flag_is_validated_and_passed_to_run(self) -> None:
+        module = load_cli_module()
+        calls = []
+
+        def fake_run(*args, **kwargs):
+            calls.append((args, kwargs))
+            return {"run_id": "test-run", "run_dir": "/tmp/test-run", "ok": False, "dry_run": True}
+
+        old_argv = sys.argv
+        module.run = fake_run
+        sys.argv = [
+            "run_agent_loop.py",
+            "--task",
+            "fix add",
+            "--advisory-reviewer",
+            "codex",
+            "--reviewer-rubric",
+            "reviewers/test-reviewer.md",
+            "--dry-run",
+        ]
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = module.main()
+        finally:
+            sys.argv = old_argv
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][1]["reviewer_rubric"].source_path, "reviewers/test-reviewer.md")
+
+    def test_reviewer_rubric_without_advisory_reviewer_fails_before_run(self) -> None:
+        module = load_cli_module()
+
+        def fake_run(*args, **kwargs):
+            raise AssertionError("run should not be called")
+
+        old_argv = sys.argv
+        module.run = fake_run
+        sys.argv = ["run_agent_loop.py", "--task", "x", "--reviewer-rubric", "reviewers/test-reviewer.md"]
+        stderr = io.StringIO()
+        try:
+            with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit) as exc:
+                module.main()
+        finally:
+            sys.argv = old_argv
+
+        self.assertEqual(exc.exception.code, 2)
+        self.assertIn("--reviewer-rubric requires --advisory-reviewer codex", stderr.getvalue())
+
+    def test_invalid_reviewer_rubric_fails_before_run(self) -> None:
+        module = load_cli_module()
+
+        def fake_run(*args, **kwargs):
+            raise AssertionError("run should not be called")
+
+        old_argv = sys.argv
+        module.run = fake_run
+        sys.argv = ["run_agent_loop.py", "--task", "x", "--advisory-reviewer", "codex", "--reviewer-rubric", "reviewers/README.md"]
+        stderr = io.StringIO()
+        try:
+            with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit) as exc:
+                module.main()
+        finally:
+            sys.argv = old_argv
+
+        self.assertEqual(exc.exception.code, 2)
+        self.assertIn("README.md is not an includable reviewer rubric", stderr.getvalue())
+
     def test_unsupported_advisory_reviewer_fails_before_run(self) -> None:
         module = load_cli_module()
 
@@ -223,6 +290,25 @@ class CliSkillTests(unittest.TestCase):
 
         self.assertEqual(exc.exception.code, 2)
         self.assertIn("--check-memory cannot be combined with --advisory-reviewer", stderr.getvalue())
+
+    def test_check_memory_rejects_reviewer_rubric(self) -> None:
+        module = load_cli_module()
+
+        def fake_run(*args, **kwargs):
+            raise AssertionError("run should not be called")
+
+        old_argv = sys.argv
+        module.run = fake_run
+        sys.argv = ["run_agent_loop.py", "--check-memory", "--reviewer-rubric", "reviewers/test-reviewer.md"]
+        stderr = io.StringIO()
+        try:
+            with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit) as exc:
+                module.main()
+        finally:
+            sys.argv = old_argv
+
+        self.assertEqual(exc.exception.code, 2)
+        self.assertIn("--check-memory cannot be combined with --reviewer-rubric", stderr.getvalue())
 
     def test_failed_memory_validation_does_not_call_run(self) -> None:
         module = load_cli_module()

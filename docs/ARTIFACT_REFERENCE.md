@@ -130,6 +130,14 @@ Human-readable advisory findings. If reviewer output was malformed, it includes 
 
 Structured advisory result. `recommendation` may be `no_concerns`, `review_suggested`, `human_attention_required`, or `reviewer_output_unparseable`. It records parse and validation errors without changing verifier status.
 
+### `advisory_review_rubric.md`
+
+Rubric receipt. Exists only when a human explicitly passes `--reviewer-rubric reviewers/<rubric>.md` with `--advisory-reviewer codex`. It includes the selected rubric contents and notes that automatic rubric selection was false.
+
+### `advisory_review_rubric.json`
+
+Structured rubric receipt. Exists only with an explicit reviewer rubric. It records source path, byte size, validation status, advisory-only status, and `automatic_selection: false`.
+
 ## Context Artifacts
 
 ### `context_summary.json`
@@ -194,4 +202,4 @@ Selected local skill. Exists with `--skill`. Read it to confirm the right playbo
 
 ## Reserved Artifact Rule
 
-Target repositories must not create files with Agent Loop Factory artifact names such as `run_report.md`, `gate_results.json`, `verifier_result.json`, `review_bundle.md`, `pr_body.md`, `memory_proposal.md`, or advisory review receipt names. Those names are reserved for loop receipts. Creating them inside the target repo could spoof or confuse review artifacts, so the verifier treats reserved artifact touches as unsafe.
+Target repositories must not create files with Agent Loop Factory artifact names such as `run_report.md`, `gate_results.json`, `verifier_result.json`, `review_bundle.md`, `pr_body.md`, `memory_proposal.md`, or advisory review receipt names including `advisory_review_rubric.md` and `advisory_review_rubric.json`. Those names are reserved for loop receipts. Creating them inside the target repo could spoof or confuse review artifacts, so the verifier treats reserved artifact touches as unsafe.

@@ -145,6 +145,9 @@ def build_memory_proposal(
         "github_ci_included": bool(github_context and github_context.ci),
         "advisory_review_included": bool(advisory_review),
         "advisory_review_recommendation": advisory_review.get("recommendation") if advisory_review else None,
+        "reviewer_rubric_included": bool(advisory_review and advisory_review.get("reviewer_rubric_included")),
+        "reviewer_rubric_path": advisory_review.get("reviewer_rubric_path") if advisory_review else None,
+        "reviewer_rubric_automatic_selection": False,
     }
 
 

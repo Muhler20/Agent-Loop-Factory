@@ -304,6 +304,12 @@ def _handoff_github_context(run_dir: Path, github_summary: dict[str, object] | N
 def _pr_body_advisory_context(advisory_review: dict[str, object] | None) -> str:
     if not advisory_review:
         return ""
+    rubric = ""
+    if advisory_review.get("reviewer_rubric_included"):
+        rubric = f"""* reviewer rubric source: {advisory_review.get("reviewer_rubric_path")}
+* reviewer rubric artifacts: advisory_review_rubric.md / advisory_review_rubric.json
+* automatic rubric selection: false
+"""
     return f"""# Advisory Review
 
 * advisory review: advisory_review.md
@@ -311,15 +317,21 @@ def _pr_body_advisory_context(advisory_review: dict[str, object] | None) -> str:
 * advisory only: true
 * does not affect verifier_result.json: true
 * recommendation: {advisory_review.get("recommendation")}
+{rubric}
 """
 
 
 def _handoff_advisory_context(run_dir: Path, advisory_review: dict[str, object] | None) -> str:
     if not advisory_review:
         return ""
+    rubric = ""
+    if advisory_review.get("reviewer_rubric_included"):
+        rubric = f"""
+* advisory_review_rubric.md: {run_dir / "advisory_review_rubric.md"}
+* advisory_review_rubric.json: {run_dir / "advisory_review_rubric.json"}"""
     return f"""* advisory_review.md: {run_dir / "advisory_review.md"}
 * advisory_review.json: {run_dir / "advisory_review.json"}
 * advisory_review_result.json: {run_dir / "advisory_review_result.json"}
 * advisory_review_prompt.md: {run_dir / "advisory_review_prompt.md"}
 * advisory_review_stdout.log: {run_dir / "advisory_review_stdout.log"}
-* advisory_review_stderr.log: {run_dir / "advisory_review_stderr.log"}"""
+* advisory_review_stderr.log: {run_dir / "advisory_review_stderr.log"}{rubric}"""

@@ -19,6 +19,7 @@ from .pr_handoff import write_pr_handoff
 from .pr_handoff_check import write_pr_handoff_check
 from .run_gates import run_gates
 from .review_bundle import recommendation, write_review_bundle
+from .reviewer_rubric import ReviewerRubric, load_reviewer_rubric
 from .skill import Skill
 from .summarize_diff import write_diff_summary
 from .task_spec import TaskSpec, inline_task_spec, task_spec_from_body
@@ -41,10 +42,15 @@ def run(
     github_ci_run: str | None = None,
     github_runner=None,
     advisory_reviewer: str | None = None,
+    reviewer_rubric: ReviewerRubric | Path | str | None = None,
     advisory_runner=None,
 ) -> dict[str, object]:
     validate_github_flags(github_issue, github_repo, github_ci_run)
     repo_root = repo_root.resolve()
+    if reviewer_rubric and advisory_reviewer != "codex":
+        raise ValueError("--reviewer-rubric requires --advisory-reviewer codex")
+    if reviewer_rubric and not isinstance(reviewer_rubric, ReviewerRubric):
+        reviewer_rubric = load_reviewer_rubric(repo_root, reviewer_rubric)
     agent_dir = repo_root / ".agent"
     run_id = _run_id()
     run_dir = agent_dir / "runs" / run_id
@@ -99,7 +105,7 @@ def run(
         if advisory_reviewer != "codex":
             raise ValueError("unsupported advisory reviewer: expected codex")
         if not dry_run:
-            advisory_review = run_advisory_reviewer(run_dir, task_spec, skill, config, worktree, gates, verifier_result, diff_summary, review_recommendation, handoff_check, context, context_summary, github_context, github_summary, memory_context, runner=advisory_runner or subprocess.run)
+            advisory_review = run_advisory_reviewer(run_dir, task_spec, skill, config, worktree, gates, verifier_result, diff_summary, review_recommendation, handoff_check, context, context_summary, github_context, github_summary, memory_context, reviewer_rubric, runner=advisory_runner or subprocess.run)
     memory_proposal = write_memory_proposal(run_dir, run_id, task_spec, skill, gates, verifier_result, review_recommendation, str(handoff_check["status"]), dry_run, memory_context, github_context, advisory_review)
     write_review_bundle(run_dir, run_id, task_spec, skill, selected_implementer, worktree, gates, verifier_result, diff_summary, ok, handoff_check["status"], context_summary, memory_proposal, memory_summary, github_summary, advisory_review)
     write_pr_handoff(run_dir, run_id, task_spec, skill, worktree, gates, verifier_result, review_recommendation, handoff_check["status"], context_summary, memory_proposal, memory_summary, github_summary, advisory_review)
@@ -337,6 +343,12 @@ def _github_context_report(github_summary: dict[str, object] | None) -> str:
 def _advisory_report(run_id: str, advisory_review: dict[str, object] | None) -> str:
     if not advisory_review:
         return "## Advisory Review\n\n- included: false"
+    rubric = ""
+    if advisory_review.get("reviewer_rubric_included"):
+        rubric = f"""- reviewer rubric: advisory_review_rubric.md / advisory_review_rubric.json
+- rubric source: {advisory_review.get("reviewer_rubric_path")}
+- automatic rubric selection: false
+"""
     return f"""## Advisory Review
 
 - included: true
@@ -349,7 +361,8 @@ def _advisory_report(run_id: str, advisory_review: dict[str, object] | None) -> 
 - result: advisory_review_result.json
 - prompt: advisory_review_prompt.md
 - stdout: advisory_review_stdout.log
-- stderr: advisory_review_stderr.log"""
+- stderr: advisory_review_stderr.log
+{rubric}"""
 
 
 def _gate_report(gate: dict[str, object]) -> str:

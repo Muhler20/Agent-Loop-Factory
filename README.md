@@ -2,7 +2,7 @@
 
 `agent-loop-factory` is a supervised software-agent control loop for local coding-agent runs. It creates an isolated git worktree for a target repository, optionally asks Codex to make one small change, runs configured gates, verifies the resulting diff deterministically, writes audit artifacts, and stops for human review.
 
-It is not an autonomous coding platform. Through v12 it is manually triggered and human-in-the-loop. GitHub can be an explicit read-only input source through `gh`, but it is not an output target. The optional advisory reviewer is a second-opinion note-taker only. The loop does not push, merge, deploy, open PRs, comment on issues, label issues, rerun workflows, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, use MCP/connectors, automatically update durable memory/rule files, or automatically search, rank, retrieve, or select memory.
+It is not an autonomous coding platform. Through v12.1 it is manually triggered and human-in-the-loop. GitHub can be an explicit read-only input source through `gh`, but it is not an output target. The optional advisory reviewer is a second-opinion note-taker only. Reviewer rubrics are explicit advisory guidance only. The loop does not push, merge, deploy, open PRs, comment on issues, label issues, rerun workflows, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, use MCP/connectors, automatically update durable memory/rule files, or automatically search, rank, retrieve, or select memory.
 
 ## What It Solves
 
@@ -16,7 +16,7 @@ Agent Loop Factory is for small, repeatable coding tasks where the target repo h
 
 ## What It Does Today
 
-Implemented through v12:
+Implemented through v12.1:
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -41,6 +41,7 @@ Implemented through v12:
 - v11 explicit read-only GitHub issue / CI context intake using `gh`
 - v11.1 operator documentation consolidation
 - v12 optional advisory reviewer
+- v12.1 reviewer rubric files
 
 Current capabilities:
 
@@ -51,6 +52,7 @@ Current capabilities:
 - Optional local issue and CI log context files with `--issue-file` and `--ci-log-file`.
 - Optional read-only GitHub issue / CI context with `--github-issue`, `--github-repo`, and `--github-ci-run`.
 - Optional advisory Codex reviewer with `--advisory-reviewer codex`.
+- Optional explicit reviewer rubric for the advisory reviewer with `--reviewer-rubric reviewers/<rubric>.md`.
 - Git worktree isolation under the configured worktree base path.
 - Required and optional named gates.
 - Diff summary including tracked stats and untracked files.
@@ -74,9 +76,10 @@ Current capabilities:
 10. Run configured gates from the worktree.
 11. Run the deterministic verifier.
 12. Optionally run the advisory reviewer after gates, verifier, recommendation, and handoff validation facts exist.
-13. Write reviewable memory proposal artifacts.
-14. Write audit artifacts and update `.agent/state.json` and `PROGRESS.md`.
-15. Stop for human review.
+13. Optionally include a human-selected reviewer rubric as advisory reviewer guidance.
+14. Write reviewable memory proposal artifacts.
+15. Write audit artifacts and update `.agent/state.json` and `PROGRESS.md`.
+16. Stop for human review.
 
 ## Basic Dry Run
 
@@ -94,7 +97,7 @@ This creates a run record and planned artifacts without creating a git worktree 
 - [Operator Guide](docs/OPERATOR_GUIDE.md): safe human operating flow and run patterns.
 - [Artifact Reference](docs/ARTIFACT_REFERENCE.md): every run artifact and what to inspect.
 - [Safety Model](docs/SAFETY_MODEL.md): trust boundaries and failure handling.
-- [Version History](docs/VERSION_HISTORY.md): concise milestone history through v12.
+- [Version History](docs/VERSION_HISTORY.md): concise milestone history through v12.1.
 
 ## Common Commands
 
@@ -145,6 +148,17 @@ python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --advisory
 ```
 
 The advisory reviewer runs after gates, `verifier_result.json`, review recommendation, and PR handoff validation exist. It writes `advisory_review.md`, `advisory_review.json`, `advisory_review_result.json`, prompt, stdout, and stderr artifacts. It is advisory only, does not affect `verifier_result.json`, does not replace gates, verifier, or human review, and must not modify files. Malformed reviewer output is preserved and marked `reviewer_output_unparseable`.
+
+Advisory review with an explicit reviewer rubric:
+
+```bash
+python3 scripts/run_agent_loop.py \
+  --task-file tasks/fix-sample-add.md \
+  --advisory-reviewer codex \
+  --reviewer-rubric reviewers/test-reviewer.md
+```
+
+Reviewer rubrics are human-authored files under `reviewers/`. They guide the advisory reviewer only, do not affect `verifier_result.json`, do not replace gates or human review, and are never automatically selected, ranked, retrieved, or applied. When used, `advisory_review_rubric.md` and `advisory_review_rubric.json` are written as receipts.
 
 Task spec with explicit approved memory:
 
@@ -388,6 +402,8 @@ The draft PR handoff package is local only. `pr_title.txt`, `pr_body.md`, and `p
 
 `advisory_review.md` and `advisory_review.json` are written only with `--advisory-reviewer codex`. They are advisory receipts, not authority. Malformed reviewer output is preserved in raw logs and marked `reviewer_output_unparseable`.
 
+`advisory_review_rubric.md` and `advisory_review_rubric.json` are written only when a human also passes `--reviewer-rubric reviewers/<rubric>.md`. They record the explicit rubric source and confirm automatic rubric selection was false.
+
 ## Verifier Checks
 
 The deterministic verifier checks:
@@ -422,7 +438,7 @@ Current safety boundaries are local and deterministic:
 - Registry memory is included in prompts only when a human names files with `--memory-file`; there is no automatic memory search, ranking, retrieval, or selection.
 - Included memory is guidance only and cannot override task scope, constraints, gates, verifier rules, or human approval boundaries.
 - GitHub context is explicit, read-only, and supporting evidence only; it does not write to GitHub or discover work automatically.
-- Advisory review is explicit, advisory only, and cannot change `verifier_result.json`.
+- Advisory review and reviewer rubrics are explicit, advisory only, and cannot change `verifier_result.json`.
 - Repository CI only runs `python3 -m unittest discover -s tests`; it is not webhook-based agent automation.
 
 The Codex prompt includes the task, selected skill, optional local/GitHub context, optional explicit memory context, configured safety limits, `AGENTS.md`, and `CONSTRAINTS.md` when present. Gates and the deterministic verifier decide run success; the implementer does not.
@@ -431,7 +447,7 @@ The Codex prompt includes the task, selected skill, optional local/GitHub contex
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/VERSION_HISTORY.md](docs/VERSION_HISTORY.md).
 
-Planned items are not implemented unless listed above. The current implemented milestone is v12 optional advisory reviewer. GitHub context remains read-only input; the loop does not automatically retrieve memory, write to GitHub, create PRs, merge, or deploy.
+Planned items are not implemented unless listed above. The current implemented milestone is v12.1 reviewer rubric files. GitHub context remains read-only input; the loop does not automatically retrieve memory, auto-select rubrics, write to GitHub, create PRs, merge, or deploy.
 
 ## Troubleshooting
 

@@ -159,6 +159,8 @@ class VerifierTests(unittest.TestCase):
             "advisory_review_prompt.md",
             "advisory_review_stdout.log",
             "advisory_review_stderr.log",
+            "advisory_review_rubric.md",
+            "advisory_review_rubric.json",
         ]:
             with self.subTest(artifact=artifact):
                 with repo() as tmp:

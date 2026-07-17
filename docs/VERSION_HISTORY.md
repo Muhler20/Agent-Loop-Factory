@@ -137,3 +137,9 @@ Safety boundary preserved: documentation only; no runtime behavior change.
 Purpose: add an explicit second-opinion reviewer after deterministic facts exist.
 Main artifacts/features: `--advisory-reviewer codex`, advisory prompt/stdout/stderr/result/markdown/JSON artifacts, malformed-output fallback.
 Safety boundary preserved: advisory review is not a gate, does not affect `verifier_result.json`, does not replace gates or human review, treats evidence as untrusted data, and must not modify files or write to GitHub.
+
+## v12.1 reviewer rubric files
+
+Purpose: let humans explicitly include reviewer guidance for advisory review.
+Main artifacts/features: `reviewers/`, `--reviewer-rubric reviewers/<rubric>.md`, `advisory_review_rubric.md`, and `advisory_review_rubric.json`.
+Safety boundary preserved: rubrics are advisory only, do not affect `verifier_result.json`, do not replace gates or human review, and are not automatically selected, ranked, retrieved, or applied.

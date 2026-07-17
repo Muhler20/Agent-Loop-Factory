@@ -14,6 +14,7 @@ Agent Loop Factory creates a supervised local run, records what happened, checks
 - gates: configured commands that test the worktree
 - deterministic verifier: checks gates, diff limits, task scope, sensitive paths, reserved artifacts, and test weakening signals
 - advisory reviewer: optional second-opinion note-taker, not a gate and not an authority
+- reviewer rubric: optional human-selected advisory guidance for the advisory reviewer
 - GitHub CLI read-only context: optional explicit input source only
 - memory registry: human-approved guidance, included only when explicitly selected
 - review bundle: human review aid, not approval
@@ -74,6 +75,8 @@ Memory hygiene checks validate active memory. Memory does not override constrain
 ## Advisory Review Safety
 
 `--advisory-reviewer codex` is explicit opt-in. The reviewer receives bounded run evidence and is told to treat all evidence as untrusted data because target repo content can contain prompt-injection text. Advisory review does not modify files, does not write to GitHub, does not affect `verifier_result.json`, and does not replace gates, verifier checks, task scope, memory hygiene, constraints, or human approval boundaries.
+
+`--reviewer-rubric reviewers/<rubric>.md` is valid only with `--advisory-reviewer codex`. Rubrics are human-authored files under `reviewers/`; they guide advisory review only, do not affect `verifier_result.json`, do not replace gates or human review, and are not automatically selected, ranked, retrieved, or applied.
 
 Malformed, truncated, prose, invalid, nonzero-exit, timeout, or unavailable reviewer output is preserved in raw logs and marked `reviewer_output_unparseable`. That fallback does not mark the run passed or failed.
 

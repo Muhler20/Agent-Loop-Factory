@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from agent_loop_factory.orchestrator import run
 from agent_loop_factory.context_intake import ContextData
 from agent_loop_factory.memory_context import MemoryContext, MemoryFile
+from agent_loop_factory.reviewer_rubric import ReviewerRubric
 from agent_loop_factory.skill import Skill
 
 
@@ -78,6 +79,42 @@ def advisory_stdout(recommendation: str = "no_concerns") -> dict[str, object]:
         "requires_human_approval": True,
         "no_files_modified": True,
     }
+
+
+def valid_rubric() -> str:
+    return """# Test Reviewer
+
+* status: active
+* category: tests
+* advisory_only: true
+
+## Review Focus
+
+Focus.
+
+## Questions To Ask
+
+Ask.
+
+## Red Flags
+
+Flags.
+
+## Evidence To Cite
+
+Evidence.
+
+## Suggested Human Actions
+
+Act.
+
+## Non-Authority Reminder
+
+* This rubric guides advisory review only.
+* It does not override gates.
+* It does not override verifier_result.json.
+* It does not override task scope, constraints, memory hygiene, or human approval boundaries.
+"""
 
 
 class OrchestratorDryRunTests(unittest.TestCase):
@@ -149,7 +186,24 @@ class OrchestratorDryRunTests(unittest.TestCase):
 
             self.assertFalse((run_dir / "advisory_review_prompt.md").exists())
             self.assertFalse((run_dir / "advisory_review.json").exists())
+            self.assertFalse((run_dir / "advisory_review_rubric.md").exists())
             self.assertIn("## Advisory Review\n\n- included: false", (run_dir / "run_report.md").read_text())
+
+    def test_dry_run_with_reviewer_rubric_validates_but_does_not_call_reviewer(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            write_agent_config(tmp_path)
+            (tmp_path / "reviewers").mkdir()
+            (tmp_path / "reviewers" / "test.md").write_text(valid_rubric())
+
+            def fake_reviewer(*args, **kwargs):
+                raise AssertionError("reviewer should not be called")
+
+            result = run("test task description", tmp_path, dry_run=True, advisory_reviewer="codex", reviewer_rubric="reviewers/test.md", advisory_runner=fake_reviewer)
+            run_dir = Path(result["run_dir"])
+
+            self.assertFalse((run_dir / "advisory_review_rubric.md").exists())
+            self.assertFalse((run_dir / "advisory_review.json").exists())
 
     def test_advisory_reviewer_artifacts_and_references_are_written_when_requested(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -188,6 +242,49 @@ class OrchestratorDryRunTests(unittest.TestCase):
             self.assertIn("advisory_review_stderr.log", (run_dir / "pr_handoff.md").read_text())
             self.assertTrue(proposal["advisory_review_included"])
             self.assertEqual(proposal["advisory_review_recommendation"], "review_suggested")
+            self.assertFalse(proposal["reviewer_rubric_included"])
+            self.assertFalse(json.loads((run_dir / "advisory_review.json").read_text())["reviewer_rubric_included"])
+            self.assertFalse((run_dir / "advisory_review_rubric.md").exists())
+
+    def test_reviewer_rubric_artifacts_and_references_are_written_when_requested(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            write_normal_config(tmp_path)
+            init_target_repo(tmp_path / "target")
+            rubric = ReviewerRubric("reviewers/test-reviewer.md", Path("/tmp/test-reviewer.md"), valid_rubric(), len(valid_rubric()))
+
+            def fake_reviewer(command, **kwargs):
+                return subprocess.CompletedProcess(command, 0, json.dumps(advisory_stdout("review_suggested")), "")
+
+            result = run("inspect only", tmp_path, dry_run=False, advisory_reviewer="codex", reviewer_rubric=rubric, advisory_runner=fake_reviewer)
+            run_dir = Path(result["run_dir"])
+            proposal = json.loads((run_dir / "memory_proposal.json").read_text())
+            advisory = json.loads((run_dir / "advisory_review.json").read_text())
+            advisory_result = json.loads((run_dir / "advisory_review_result.json").read_text())
+
+            self.assertTrue((run_dir / "advisory_review_rubric.md").exists())
+            self.assertTrue((run_dir / "advisory_review_rubric.json").exists())
+            self.assertTrue(advisory["reviewer_rubric_included"])
+            self.assertEqual(advisory["reviewer_rubric_path"], "reviewers/test-reviewer.md")
+            self.assertFalse(advisory["reviewer_rubric_automatic_selection"])
+            self.assertTrue(advisory_result["reviewer_rubric_included"])
+            self.assertTrue(proposal["reviewer_rubric_included"])
+            self.assertEqual(proposal["reviewer_rubric_path"], "reviewers/test-reviewer.md")
+            self.assertFalse(proposal["reviewer_rubric_automatic_selection"])
+            self.assertIn("reviewer rubric: advisory_review_rubric.md / advisory_review_rubric.json", (run_dir / "run_report.md").read_text())
+            self.assertIn("Reviewer rubric was explicitly selected.", (run_dir / "review_bundle.md").read_text())
+            self.assertIn("reviewer rubric source: reviewers/test-reviewer.md", (run_dir / "pr_body.md").read_text())
+            self.assertIn("advisory_review_rubric.md", (run_dir / "pr_handoff.md").read_text())
+
+    def test_invalid_reviewer_rubric_stops_before_run_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            write_agent_config(tmp_path)
+
+            with self.assertRaisesRegex(ValueError, "does not exist"):
+                run("test task description", tmp_path, dry_run=True, advisory_reviewer="codex", reviewer_rubric="reviewers/missing.md")
+
+            self.assertEqual(list((tmp_path / ".agent" / "runs").iterdir()), [])
 
     def test_advisory_reviewer_failure_does_not_change_verifier(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

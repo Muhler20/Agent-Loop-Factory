@@ -26,6 +26,7 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - v11 read-only GitHub issue / CI fetch using gh
 - v11.1 operator documentation consolidation
 - v12 optional advisory reviewer
+- v12.1 reviewer rubric files
 
 ## Current Capabilities
 
@@ -51,16 +52,17 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - Explicit human-selected memory prompt inclusion with `--memory-file`.
 - Optional advisory Codex reviewer with `--advisory-reviewer codex`.
 - Advisory reviewer artifacts are receipts only and do not affect `verifier_result.json`.
+- Explicit reviewer rubric files under `reviewers/`, selected only with `--reviewer-rubric`.
+- Reviewer rubrics guide advisory review only; they do not replace gates, `verifier_result.json`, or human review.
 - Run artifacts under `.agent/runs/<run_id>/`.
 - Human review boundary after every run.
 
 ## Next Recommended Milestone
 
-v12.1 reviewer rubric files. Rubrics should remain explicit inputs and must not turn advisory review into a hard gate.
+v13 scheduler / recurring reporting only.
 
 ## Future Milestones
 
-- v12.1 reviewer rubric files
 - v13 scheduler / recurring reporting only
 - v13.1 scheduled task queue
 - v14 multi-agent / parallel worktrees

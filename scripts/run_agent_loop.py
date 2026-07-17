@@ -13,6 +13,7 @@ from agent_loop_factory.context_intake import load_context
 from agent_loop_factory.github_context import validate_github_flags
 from agent_loop_factory.memory_context import load_memory_context
 from agent_loop_factory.memory_registry import validate_memory_registry
+from agent_loop_factory.reviewer_rubric import load_reviewer_rubric
 from agent_loop_factory.skill import load_skill
 from agent_loop_factory.task_spec import load_task_spec
 
@@ -33,6 +34,7 @@ def main() -> int:
     parser.add_argument("--github-ci-run")
     parser.add_argument("--memory-file", action="append", type=Path)
     parser.add_argument("--advisory-reviewer", choices=["codex"])
+    parser.add_argument("--reviewer-rubric", type=Path)
     args = parser.parse_args()
 
     try:
@@ -45,6 +47,10 @@ def main() -> int:
             raise ValueError("--check-memory cannot be combined with GitHub context flags")
         if args.check_memory and args.advisory_reviewer:
             raise ValueError("--check-memory cannot be combined with --advisory-reviewer")
+        if args.check_memory and args.reviewer_rubric:
+            raise ValueError("--check-memory cannot be combined with --reviewer-rubric")
+        if args.reviewer_rubric and not args.advisory_reviewer:
+            raise ValueError("--reviewer-rubric requires --advisory-reviewer codex")
     except ValueError as exc:
         parser.error(str(exc))
 
@@ -67,6 +73,7 @@ def main() -> int:
         skill = load_skill(ROOT, args.skill) if args.skill else None
         context = load_context(args.issue_file, args.ci_log_file)
         memory_context = load_memory_context(ROOT, args.memory_file)
+        reviewer_rubric = load_reviewer_rubric(ROOT, args.reviewer_rubric) if args.reviewer_rubric else None
     except ValueError as exc:
         parser.error(str(exc))
 
@@ -84,6 +91,7 @@ def main() -> int:
             github_repo=args.github_repo,
             github_ci_run=args.github_ci_run,
             advisory_reviewer=args.advisory_reviewer,
+            reviewer_rubric=reviewer_rubric,
         )
     except ValueError as exc:
         parser.error(str(exc))
