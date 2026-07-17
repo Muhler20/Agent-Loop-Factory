@@ -20,12 +20,13 @@ def write_pr_handoff(
     context_summary: dict[str, object] | None = None,
     memory_proposal: dict[str, object] | None = None,
     memory_summary: dict[str, object] | None = None,
+    github_summary: dict[str, object] | None = None,
 ) -> None:
     title = pr_title(run_id, task_spec)
     (run_dir / "pr_title.txt").write_text(title + "\n")
-    (run_dir / "pr_body.md").write_text(build_pr_body(task_spec, skill, gates, verifier_result, recommendation, handoff_check_status, context_summary, memory_proposal, memory_summary))
+    (run_dir / "pr_body.md").write_text(build_pr_body(task_spec, skill, gates, verifier_result, recommendation, handoff_check_status, context_summary, memory_proposal, memory_summary, github_summary))
     (run_dir / "pr_commands.md").write_text(build_pr_commands(run_dir, title, worktree, verifier_result))
-    (run_dir / "pr_handoff.md").write_text(build_pr_handoff(run_dir, recommendation, handoff_check_status, context_summary, memory_proposal, memory_summary))
+    (run_dir / "pr_handoff.md").write_text(build_pr_handoff(run_dir, recommendation, handoff_check_status, context_summary, memory_proposal, memory_summary, github_summary))
 
 
 def pr_title(run_id: str, task_spec: TaskSpec) -> str:
@@ -44,11 +45,13 @@ def build_pr_body(
     context_summary: dict[str, object] | None = None,
     memory_proposal: dict[str, object] | None = None,
     memory_summary: dict[str, object] | None = None,
+    github_summary: dict[str, object] | None = None,
 ) -> str:
     task_source = "file" if task_spec.task_file_path else "inline"
     context_summary = context_summary or {}
     proposal_status = (memory_proposal or {}).get("proposal_status", "Unavailable")
     memory_context = _pr_body_memory_context(memory_summary)
+    github_context = _pr_body_github_context(github_summary)
     return f"""# Summary
 
 {task_spec.task_title or task_spec.task_body or "Agent Loop Factory run"}
@@ -116,6 +119,8 @@ def build_pr_body(
 
 {memory_context}
 
+{github_context}
+
 # Safety
 
 * This PR handoff was prepared by Agent Loop Factory.
@@ -180,10 +185,11 @@ gh pr create \\
 """
 
 
-def build_pr_handoff(run_dir: Path, recommendation: str, handoff_check_status: str = "Unavailable", context_summary: dict[str, object] | None = None, memory_proposal: dict[str, object] | None = None, memory_summary: dict[str, object] | None = None) -> str:
+def build_pr_handoff(run_dir: Path, recommendation: str, handoff_check_status: str = "Unavailable", context_summary: dict[str, object] | None = None, memory_proposal: dict[str, object] | None = None, memory_summary: dict[str, object] | None = None, github_summary: dict[str, object] | None = None) -> str:
     context_summary = context_summary or {}
     proposal_status = (memory_proposal or {}).get("proposal_status", "Unavailable")
     memory_handoff = _handoff_memory_context(run_dir, memory_summary)
+    github_handoff = _handoff_github_context(run_dir, github_summary)
     return f"""# Draft PR Handoff
 
 * pr_title.txt: {run_dir / "pr_title.txt"}
@@ -197,6 +203,7 @@ def build_pr_handoff(run_dir: Path, recommendation: str, handoff_check_status: s
 * ci_context.log: {_none(context_summary.get("ci_log_artifact_path"))}
 * context_summary.json: {_none(context_summary.get("context_summary_path"))}
 {memory_handoff}
+{github_handoff}
 * recommendation: {recommendation}
 * handoff check status: {handoff_check_status}
 * memory proposal status: {proposal_status}
@@ -259,3 +266,29 @@ def _handoff_memory_context(run_dir: Path, memory_summary: dict[str, object] | N
         return ""
     return f"""* memory_context.md: {run_dir / "memory_context.md"}
 * memory_context.json: {run_dir / "memory_context.json"}"""
+
+
+def _pr_body_github_context(github_summary: dict[str, object] | None) -> str:
+    if not github_summary:
+        return ""
+    issue = "github_issue_context.md / github_issue_context.json" if github_summary.get("issue_context_included") else "None"
+    ci = "github_ci_context.log / github_ci_context.json" if github_summary.get("ci_context_included") else "None"
+    return f"""# GitHub Context
+
+* GitHub context was fetched read-only.
+* No GitHub writes were performed.
+* issue context: {issue}
+* CI context: {ci}
+* summary: github_context_summary.json
+"""
+
+
+def _handoff_github_context(run_dir: Path, github_summary: dict[str, object] | None) -> str:
+    if not github_summary:
+        return ""
+    lines = [f"* github_context_summary.json: {run_dir / 'github_context_summary.json'}"]
+    if github_summary.get("issue_context_included"):
+        lines += [f"* github_issue_context.md: {run_dir / 'github_issue_context.md'}", f"* github_issue_context.json: {run_dir / 'github_issue_context.json'}"]
+    if github_summary.get("ci_context_included"):
+        lines += [f"* github_ci_context.log: {run_dir / 'github_ci_context.log'}", f"* github_ci_context.json: {run_dir / 'github_ci_context.json'}"]
+    return "\n".join(lines) + "\n"

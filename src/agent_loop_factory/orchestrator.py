@@ -11,6 +11,7 @@ from .codex_implementer import run_codex_implementer, write_codex_skip
 from .config import load_config
 from .context_intake import ContextData
 from .create_worktree import create_worktree
+from .github_context import GitHubContext, fetch_github_context, validate_github_flags
 from .memory_context import MemoryContext, write_memory_context
 from .memory_proposal import write_memory_proposal
 from .pr_handoff import write_pr_handoff
@@ -34,7 +35,12 @@ def run(
     skill: Skill | None = None,
     context: ContextData | None = None,
     memory_context: MemoryContext | None = None,
+    github_issue: str | None = None,
+    github_repo: str | None = None,
+    github_ci_run: str | None = None,
+    github_runner=None,
 ) -> dict[str, object]:
+    validate_github_flags(github_issue, github_repo, github_ci_run)
     repo_root = repo_root.resolve()
     agent_dir = repo_root / ".agent"
     run_id = _run_id()
@@ -45,6 +51,10 @@ def run(
     if skill:
         (run_dir / "skill.md").write_text(skill.skill_body)
     context_summary = _write_context_artifacts(run_dir, run_id, context)
+    github_context = GitHubContext()
+    github_summary = None
+    if not dry_run and (github_issue or github_repo or github_ci_run):
+        github_context, github_summary = fetch_github_context(run_dir, run_id, github_issue, github_repo, github_ci_run, runner=github_runner or subprocess.run)
     memory_summary = write_memory_context(run_dir, run_id, memory_context)
 
     config = load_config(agent_dir / "config.yaml")
@@ -68,7 +78,7 @@ def run(
         elif not worktree.ok or not worktree.path:
             codex_result = write_codex_skip(run_dir, "worktree unavailable: codex not executed")
         else:
-            codex_result = run_codex_implementer(task_spec.task_body, worktree.path, run_dir, config, skill=skill, context=context, memory_context=memory_context, runner=codex_runner or subprocess.run)
+            codex_result = run_codex_implementer(task_spec.task_body, worktree.path, run_dir, config, skill=skill, context=context, github_context=github_context, memory_context=memory_context, runner=codex_runner or subprocess.run)
     # TODO: future verifier agent call
     # TODO: future Docker build gate
     # TODO: future Docker Compose deployment check
@@ -81,10 +91,10 @@ def run(
 
     review_recommendation, _ = recommendation(verifier_result, gates)
     handoff_check = write_pr_handoff_check(run_dir, worktree, gates, verifier_result, review_recommendation)
-    memory_proposal = write_memory_proposal(run_dir, run_id, task_spec, skill, gates, verifier_result, review_recommendation, str(handoff_check["status"]), dry_run, memory_context)
-    write_review_bundle(run_dir, run_id, task_spec, skill, selected_implementer, worktree, gates, verifier_result, diff_summary, ok, handoff_check["status"], context_summary, memory_proposal, memory_summary)
-    write_pr_handoff(run_dir, run_id, task_spec, skill, worktree, gates, verifier_result, review_recommendation, handoff_check["status"], context_summary, memory_proposal, memory_summary)
-    report = _report(task_spec, skill, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, verifier_result, diff_summary, ok, review_recommendation, handoff_check["status"], context_summary, memory_proposal, memory_summary)
+    memory_proposal = write_memory_proposal(run_dir, run_id, task_spec, skill, gates, verifier_result, review_recommendation, str(handoff_check["status"]), dry_run, memory_context, github_context)
+    write_review_bundle(run_dir, run_id, task_spec, skill, selected_implementer, worktree, gates, verifier_result, diff_summary, ok, handoff_check["status"], context_summary, memory_proposal, memory_summary, github_summary)
+    write_pr_handoff(run_dir, run_id, task_spec, skill, worktree, gates, verifier_result, review_recommendation, handoff_check["status"], context_summary, memory_proposal, memory_summary, github_summary)
+    report = _report(task_spec, skill, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, verifier_result, diff_summary, ok, review_recommendation, handoff_check["status"], context_summary, memory_proposal, memory_summary, github_summary)
     (run_dir / "run_report.md").write_text(report)
     _update_state(agent_dir / "state.json", run_id, ok)
 
@@ -129,7 +139,7 @@ def _write_context_artifacts(run_dir: Path, run_id: str, context: ContextData | 
     return summary
 
 
-def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool, implementer: str, codex_result, config, worktree, gates, verifier_result, diff_summary: str, ok: bool, review_recommendation: str = "Unavailable", handoff_check_status: str = "Unavailable", context_summary: dict[str, object] | None = None, memory_proposal: dict[str, object] | None = None, memory_summary: dict[str, object] | None = None) -> str:
+def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool, implementer: str, codex_result, config, worktree, gates, verifier_result, diff_summary: str, ok: bool, review_recommendation: str = "Unavailable", handoff_check_status: str = "Unavailable", context_summary: dict[str, object] | None = None, memory_proposal: dict[str, object] | None = None, memory_summary: dict[str, object] | None = None, github_summary: dict[str, object] | None = None) -> str:
     warnings = [str(gate["warning"]) for gate in gates if gate.get("warning")]
     if not worktree.ok:
         warnings.append(worktree.message)
@@ -158,6 +168,7 @@ def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool
     context_summary = context_summary or {}
     memory_proposal = memory_proposal or {"proposal_status": "Unavailable", "requires_human_approval": True, "no_files_modified": True}
     memory_context_text = _memory_context_report(run_id, memory_summary)
+    github_context_text = _github_context_report(github_summary)
     return f"""# Run Report
 
 ## Run
@@ -187,6 +198,8 @@ def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool
 - context_summary: {_value(context_summary.get("context_summary_path"))}
 
 {memory_context_text}
+
+{github_context_text}
 
 ## Worktree
 
@@ -292,6 +305,21 @@ def _memory_context_report(run_id: str, memory_summary: dict[str, object] | None
 - automatic selection: false
 - automatic retrieval: false
 - no files modified: true"""
+
+
+def _github_context_report(github_summary: dict[str, object] | None) -> str:
+    if not github_summary:
+        return "## GitHub Context\n\n- included: false"
+    issue = "github_issue_context.md / github_issue_context.json" if github_summary.get("issue_context_included") else "None"
+    ci = "github_ci_context.log / github_ci_context.json" if github_summary.get("ci_context_included") else "None"
+    return f"""## GitHub Context
+
+- included: true
+- read_only: true
+- no GitHub writes: true
+- issue context: {issue}
+- CI context: {ci}
+- summary: github_context_summary.json"""
 
 
 def _gate_report(gate: dict[str, object]) -> str:

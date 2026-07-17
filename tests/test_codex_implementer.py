@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from agent_loop_factory.codex_implementer import build_prompt, run_codex_implementer
 from agent_loop_factory.config import Config
 from agent_loop_factory.context_intake import ContextData
+from agent_loop_factory.github_context import GitHubCIContext, GitHubContext, GitHubIssueContext
 from agent_loop_factory.memory_context import MemoryContext, MemoryFile
 from agent_loop_factory.skill import Skill
 
@@ -101,6 +102,28 @@ class CodexImplementerTests(unittest.TestCase):
             self.assertNotIn("# Issue Context", prompt)
             self.assertNotIn("# CI Log Context", prompt)
 
+    def test_prompt_includes_github_context_when_present(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            github = GitHubContext(
+                issue=GitHubIssueContext("owner", "repo", "1", "owner/repo#1", "Issue body\n", "", 0),
+                ci=GitHubCIContext("owner", "repo", "123", "metadata\n", "log tail\n", "", "", 0, 0, True, 60000, 51200),
+            )
+
+            prompt = build_prompt("do the task", Path(raw), Config(), github_context=github)
+
+            self.assertIn("## GitHub Issue Context", prompt)
+            self.assertIn("Issue body", prompt)
+            self.assertIn("## GitHub CI Context", prompt)
+            self.assertIn("tail-truncated", prompt)
+            self.assertIn("supporting evidence only", prompt)
+
+    def test_prompt_omits_github_sections_when_absent(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            prompt = build_prompt("do the task", Path(raw), Config())
+
+            self.assertNotIn("## GitHub Issue Context", prompt)
+            self.assertNotIn("## GitHub CI Context", prompt)
+
     def test_prompt_includes_approved_memory_context_when_present(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             memory = MemoryContext([MemoryFile("memory/prompt-guidance/small-diffs.md", "Keep diffs small.\n", 18)], 18)
@@ -126,6 +149,7 @@ class CodexImplementerTests(unittest.TestCase):
             self.assertIn("Agent Loop Factory writes run artifacts under `.agent/runs/<run_id>/`.", prompt)
             self.assertIn("Do not create `run_report.md`, `gate_results.json`, `verifier_result.json`, `diff_summary.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `memory_proposal.md`, `memory_proposal.json`, `memory_context.md`, `memory_context.json`, `task_spec.md`", prompt)
             self.assertIn("`issue_context.md`, `ci_context.log`, `context_summary.json`", prompt)
+            self.assertIn("`github_issue_context.md`, `github_issue_context.json`, `github_ci_context.log`, `github_ci_context.json`, `github_context_summary.json`", prompt)
             self.assertIn("inside the target repo", prompt)
             self.assertIn("Only change files needed for the task.", prompt)
 

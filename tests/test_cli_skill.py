@@ -79,6 +79,66 @@ class CliSkillTests(unittest.TestCase):
         self.assertIn("sample_math.add", calls[0][1]["context"].issue_body)
         self.assertIn("AssertionError", calls[0][1]["context"].ci_log_body)
 
+    def test_github_flags_are_validated_and_passed_to_run(self) -> None:
+        module = load_cli_module()
+        calls = []
+
+        def fake_run(*args, **kwargs):
+            calls.append((args, kwargs))
+            return {"run_id": "test-run", "run_dir": "/tmp/test-run", "ok": False, "dry_run": True}
+
+        old_argv = sys.argv
+        module.run = fake_run
+        sys.argv = [
+            "run_agent_loop.py",
+            "--task",
+            "fix add",
+            "--github-issue",
+            "owner/repo#1",
+            "--github-repo",
+            "owner/repo",
+            "--github-ci-run",
+            "123",
+            "--dry-run",
+        ]
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = module.main()
+        finally:
+            sys.argv = old_argv
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][1]["github_issue"], "owner/repo#1")
+        self.assertEqual(calls[0][1]["github_repo"], "owner/repo")
+        self.assertEqual(calls[0][1]["github_ci_run"], "123")
+
+    def test_github_conflicts_fail_before_run(self) -> None:
+        module = load_cli_module()
+
+        def fake_run(*args, **kwargs):
+            raise AssertionError("run should not be called")
+
+        cases = [
+            (["--task", "x", "--issue-file", "examples/issues/fix-sample-add.md", "--github-issue", "owner/repo#1"], "--issue-file cannot be used"),
+            (["--task", "x", "--ci-log-file", "examples/ci/failing-unit-test.log", "--github-repo", "owner/repo", "--github-ci-run", "123"], "--ci-log-file cannot be used"),
+            (["--task", "x", "--github-ci-run", "123"], "--github-repo is required"),
+            (["--check-memory", "--github-issue", "owner/repo#1"], "--check-memory cannot be combined"),
+            (["--task", "x", "--github-issue", "owner/repo#abc"], "--github-issue must be exactly"),
+        ]
+        old_argv = sys.argv
+        module.run = fake_run
+        try:
+            for argv, error in cases:
+                with self.subTest(argv=argv):
+                    sys.argv = ["run_agent_loop.py", *argv]
+                    stderr = io.StringIO()
+                    with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit) as exc:
+                        module.main()
+                    self.assertEqual(exc.exception.code, 2)
+                    self.assertIn(error, stderr.getvalue())
+        finally:
+            sys.argv = old_argv
+
     def test_memory_file_flag_is_passed_to_run(self) -> None:
         module = load_cli_module()
         calls = []

@@ -275,6 +275,103 @@ class OrchestratorDryRunTests(unittest.TestCase):
             self.assertIn("## Approved Memory Context", prompt)
             self.assertIn("Keep diffs small.", prompt)
 
+    def test_github_context_artifacts_and_references_are_written_when_included(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            write_normal_config(tmp_path)
+            init_target_repo(tmp_path / "target")
+            calls = []
+
+            def fake_gh(command, **kwargs):
+                calls.append(command)
+                stdout = b"metadata\n" if command[:3] == ["gh", "run", "view"] and "--log" not in command else b"ci tail\n"
+                if command[:3] == ["gh", "issue", "view"]:
+                    stdout = b"Issue says fix it.\n"
+                return subprocess.CompletedProcess(command, 0, stdout, b"")
+
+            def fake_codex(*args, **kwargs):
+                return subprocess.CompletedProcess(args[0], 0, "done\n", "")
+
+            result = run(
+                "inspect only",
+                tmp_path,
+                dry_run=False,
+                implementer="codex",
+                codex_runner=fake_codex,
+                github_issue="owner/repo#1",
+                github_repo="owner/repo",
+                github_ci_run="123",
+                github_runner=fake_gh,
+            )
+            run_dir = Path(result["run_dir"])
+            prompt = (run_dir / "codex_prompt.md").read_text()
+            proposal = json.loads((run_dir / "memory_proposal.json").read_text())
+
+            self.assertEqual(calls, [
+                ["gh", "issue", "view", "owner/repo#1"],
+                ["gh", "run", "view", "123", "--repo", "owner/repo"],
+                ["gh", "run", "view", "123", "--repo", "owner/repo", "--log"],
+            ])
+            self.assertTrue((run_dir / "github_issue_context.md").exists())
+            self.assertTrue((run_dir / "github_issue_context.json").exists())
+            self.assertTrue((run_dir / "github_ci_context.log").exists())
+            self.assertTrue((run_dir / "github_ci_context.json").exists())
+            self.assertTrue((run_dir / "github_context_summary.json").exists())
+            self.assertIn("## GitHub Issue Context", prompt)
+            self.assertIn("Issue says fix it.", prompt)
+            self.assertIn("## GitHub CI Context", prompt)
+            self.assertIn("ci tail", prompt)
+            self.assertIn("no GitHub writes: true", (run_dir / "run_report.md").read_text())
+            self.assertIn("## GitHub Context", (run_dir / "review_bundle.md").read_text())
+            self.assertIn("# GitHub Context", (run_dir / "pr_body.md").read_text())
+            self.assertIn("github_context_summary.json", (run_dir / "pr_handoff.md").read_text())
+            self.assertTrue(proposal["github_context_included"])
+            self.assertTrue(proposal["github_issue_included"])
+            self.assertTrue(proposal["github_ci_included"])
+
+    def test_github_dry_run_does_not_call_gh_or_write_github_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            write_agent_config(tmp_path)
+
+            def fake_gh(*args, **kwargs):
+                raise AssertionError("gh should not be called")
+
+            result = run("test task description", tmp_path, dry_run=True, github_issue="owner/repo#1", github_runner=fake_gh)
+            run_dir = Path(result["run_dir"])
+
+            self.assertFalse((run_dir / "github_issue_context.md").exists())
+            self.assertFalse((run_dir / "github_context_summary.json").exists())
+            proposal = json.loads((run_dir / "memory_proposal.json").read_text())
+            self.assertFalse(proposal["github_context_included"])
+
+    def test_github_failure_stops_before_state_and_progress(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            write_normal_config(tmp_path)
+            init_target_repo(tmp_path / "target")
+
+            def fake_gh(command, **kwargs):
+                return subprocess.CompletedProcess(command, 1, b"", b"auth failed\n")
+
+            with self.assertRaisesRegex(ValueError, "auth failed"):
+                run("inspect only", tmp_path, dry_run=False, github_issue="owner/repo#1", github_runner=fake_gh)
+
+            self.assertFalse((tmp_path / ".agent" / "state.json").exists())
+            self.assertFalse((tmp_path / "PROGRESS.md").exists())
+
+    def test_invalid_github_identifier_stops_before_run_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            write_agent_config(tmp_path)
+
+            with self.assertRaisesRegex(ValueError, "--github-issue"):
+                run("test task description", tmp_path, dry_run=True, github_issue="owner/repo#abc")
+
+            self.assertEqual(list((tmp_path / ".agent" / "runs").iterdir()), [])
+            self.assertFalse((tmp_path / ".agent" / "state.json").exists())
+            self.assertFalse((tmp_path / "PROGRESS.md").exists())
+
     def test_codex_prompt_omits_empty_context_sections_from_orchestrator(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             tmp_path = Path(raw)

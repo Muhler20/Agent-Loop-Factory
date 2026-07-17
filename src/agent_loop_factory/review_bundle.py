@@ -33,10 +33,11 @@ def write_review_bundle(
     context_summary: dict[str, object] | None = None,
     memory_proposal: dict[str, object] | None = None,
     memory_summary: dict[str, object] | None = None,
+    github_summary: dict[str, object] | None = None,
 ) -> tuple[str, str]:
     decision, reason = recommendation(verifier_result, gates)
     (run_dir / "review_bundle.md").write_text(
-        build_review_bundle(run_id, task_spec, skill, implementer, worktree, gates, verifier_result, diff_summary, ok, decision, reason, handoff_check_status, context_summary, memory_proposal, memory_summary)
+        build_review_bundle(run_id, task_spec, skill, implementer, worktree, gates, verifier_result, diff_summary, ok, decision, reason, handoff_check_status, context_summary, memory_proposal, memory_summary, github_summary)
     )
     return decision, reason
 
@@ -57,6 +58,7 @@ def build_review_bundle(
     context_summary: dict[str, object] | None = None,
     memory_proposal: dict[str, object] | None = None,
     memory_summary: dict[str, object] | None = None,
+    github_summary: dict[str, object] | None = None,
 ) -> str:
     decision, reason = (decision, reason) if decision and reason else recommendation(verifier_result, gates)
     task_source = "file" if task_spec.task_file_path else "inline"
@@ -66,6 +68,7 @@ def build_review_bundle(
     context_summary = context_summary or {}
     proposal_status = (memory_proposal or {}).get("proposal_status", "Unavailable")
     memory_context = _memory_context(memory_summary)
+    github_context = _github_context(github_summary)
     return f"""# Human Review Bundle
 
 ## Run Summary
@@ -99,6 +102,8 @@ def build_review_bundle(
 - context summary artifact path: {_none(context_summary.get("context_summary_path"))}
 
 {memory_context}
+
+{github_context}
 
 ## Changed Files
 
@@ -214,3 +219,20 @@ def _memory_context(memory_summary: dict[str, object] | None) -> str:
 - Memory files were explicitly selected by the human.
 - No memory files were modified.
 """
+
+
+def _github_context(github_summary: dict[str, object] | None) -> str:
+    if not github_summary:
+        return ""
+    lines = [
+        "## GitHub Context",
+        "",
+        "- GitHub context was fetched read-only.",
+        "- No GitHub writes were performed.",
+    ]
+    if github_summary.get("issue_context_included"):
+        lines.append("- See github_issue_context.md / github_issue_context.json.")
+    if github_summary.get("ci_context_included"):
+        lines.append("- See github_ci_context.log / github_ci_context.json.")
+    lines.append("- See github_context_summary.json.")
+    return "\n".join(lines) + "\n"

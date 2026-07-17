@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from .github_context import GitHubContext
 from .memory_context import MemoryContext
 from .skill import Skill
 from .task_spec import TaskSpec
@@ -92,8 +93,9 @@ def write_memory_proposal(
     pr_handoff_status: str,
     dry_run: bool,
     memory_context: MemoryContext | None = None,
+    github_context: GitHubContext | None = None,
 ) -> dict[str, object]:
-    proposal = build_memory_proposal(run_id, task_spec, skill, gates, verifier_result, review_recommendation, pr_handoff_status, dry_run, memory_context)
+    proposal = build_memory_proposal(run_id, task_spec, skill, gates, verifier_result, review_recommendation, pr_handoff_status, dry_run, memory_context, github_context)
     (run_dir / "memory_proposal.json").write_text(json.dumps(proposal, indent=2) + "\n")
     (run_dir / "memory_proposal.md").write_text(build_memory_proposal_markdown(proposal))
     return proposal
@@ -109,6 +111,7 @@ def build_memory_proposal(
     pr_handoff_status: str,
     dry_run: bool,
     memory_context: MemoryContext | None = None,
+    github_context: GitHubContext | None = None,
 ) -> dict[str, object]:
     task = task_spec.task_title or task_spec.task_body or "Unavailable"
     lessons = [] if dry_run else [_lesson(trigger) for trigger in ORDER if _triggered(trigger, gates, verifier_result, pr_handoff_status)]
@@ -135,6 +138,9 @@ def build_memory_proposal(
         "no_files_modified": True,
         "memory_files_included": memory_context.paths if memory_context else [],
         "memory_context_included": bool(memory_context and memory_context.included),
+        "github_context_included": bool(github_context and github_context.included),
+        "github_issue_included": bool(github_context and github_context.issue),
+        "github_ci_included": bool(github_context and github_context.ci),
     }
 
 

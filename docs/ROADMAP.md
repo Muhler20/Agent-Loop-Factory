@@ -23,6 +23,7 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - v10.1 human-approved memory registry
 - v10.2 explicit memory inclusion in prompts
 - v10.3 memory hygiene checks
+- v11 read-only GitHub issue / CI fetch using gh
 
 ## Current Capabilities
 
@@ -33,6 +34,7 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - Task spec allowed/forbidden file guardrails.
 - Explicit local skills with `--skill`.
 - Optional local issue and CI log context intake with `--issue-file` and `--ci-log-file`.
+- Optional explicit read-only GitHub issue / CI context intake with `--github-issue`, `--github-repo`, and `--github-ci-run`.
 - Safe default implementer `none`.
 - Optional one-shot Codex implementer with `--implementer codex`.
 - Configured string or named gates.
@@ -50,11 +52,10 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 
 ## Next Recommended Milestone
 
-v11 optional read-only GitHub issue / CI fetch using gh.
+v12 optional LLM reviewer / PR review integration.
 
 ## Future Milestones
 
-- v11 optional read-only GitHub issue / CI fetch using gh
 - v12 optional LLM reviewer / PR review integration
 - v13 scheduler / recurring runs
 - v14 multi-agent / parallel execution
@@ -70,10 +71,10 @@ Current Agent Loop Factory does not provide:
 - production readiness
 - auto-merge
 - auto-deploy
-- GitHub integration
+- GitHub writes
 - automatic memory writes to durable project rules
 - automatic memory search, ranking, retrieval, or selection
-- automatic issue or CI fetching
+- automatic issue or CI discovery
 - PR creation
 - scheduler support
 - parallel agents

@@ -2,7 +2,7 @@
 
 `agent-loop-factory` is a supervised software-agent control loop for local coding-agent runs. It creates an isolated git worktree for a target repository, optionally asks Codex to make one small change, runs configured gates, verifies the resulting diff deterministically, writes audit artifacts, and stops for human review.
 
-It is not an autonomous coding platform. Through v10.2 it is local, manually triggered, and human-in-the-loop. It does not push, merge, deploy, open PRs, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, connect to GitHub/MCP services, automatically update durable memory/rule files, or automatically search, rank, retrieve, or select memory.
+It is not an autonomous coding platform. Through v11 it is manually triggered and human-in-the-loop. GitHub can be an explicit read-only input source through `gh`, but it is not an output target. The loop does not push, merge, deploy, open PRs, comment on issues, label issues, rerun workflows, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, use MCP/connectors, automatically update durable memory/rule files, or automatically search, rank, retrieve, or select memory.
 
 ## What It Solves
 
@@ -16,7 +16,7 @@ Agent Loop Factory is for small, repeatable coding tasks where the target repo h
 
 ## What It Does Today
 
-Implemented through v10.2:
+Implemented through v11:
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -35,6 +35,8 @@ Implemented through v10.2:
 - v10 reviewable memory proposals
 - v10.1 human-approved memory registry
 - v10.2 explicit memory inclusion in prompts
+- v10.3 memory hygiene checks
+- v11 explicit read-only GitHub issue / CI context intake using `gh`
 
 Current capabilities:
 
@@ -43,6 +45,7 @@ Current capabilities:
 - Optional one-shot Codex implementer: `--implementer codex`.
 - Local skill playbooks selected explicitly with `--skill`.
 - Optional local issue and CI log context files with `--issue-file` and `--ci-log-file`.
+- Optional read-only GitHub issue / CI context with `--github-issue`, `--github-repo`, and `--github-ci-run`.
 - Git worktree isolation under the configured worktree base path.
 - Required and optional named gates.
 - Diff summary including tracked stats and untracked files.
@@ -60,13 +63,14 @@ Current capabilities:
 4. Validate explicitly selected memory files from `--memory-file`, if provided.
 5. Load an explicitly selected local skill, if `--skill` is provided.
 6. Create `.agent/runs/<run_id>/`.
-7. Create a git worktree for the configured target repo.
-8. Run the selected implementer. The default `none` makes no code changes; `codex` runs `codex exec` once inside the worktree.
-9. Run configured gates from the worktree.
-10. Run the deterministic verifier.
-11. Write reviewable memory proposal artifacts.
-12. Write audit artifacts and update `.agent/state.json` and `PROGRESS.md`.
-13. Stop for human review.
+7. Fetch explicit GitHub context with read-only `gh` commands, if requested.
+8. Create a git worktree for the configured target repo.
+9. Run the selected implementer. The default `none` makes no code changes; `codex` runs `codex exec` once inside the worktree.
+10. Run configured gates from the worktree.
+11. Run the deterministic verifier.
+12. Write reviewable memory proposal artifacts.
+13. Write audit artifacts and update `.agent/state.json` and `PROGRESS.md`.
+14. Stop for human review.
 
 ## Basic Dry Run
 
@@ -152,7 +156,22 @@ Memory inclusion is human-selected only. The loop does not search, rank, retriev
 
 `--issue-file PATH` and `--ci-log-file PATH` attach local text files as supporting evidence for the run. They do not replace the task spec, and they do not expand scope. The task spec, allowed files, forbidden files, constraints, gates, and human-review rules still control the run.
 
-Context intake is local-only. Agent Loop Factory reads the provided files from disk as UTF-8 text, validates that they are non-empty files under a fixed size limit, writes run artifacts, and does not contact GitHub, GitHub Actions, webhooks, `gh`, or any network service.
+Local context intake reads the provided files from disk as UTF-8 text, validates that they are non-empty files under a fixed size limit, and writes run artifacts. Local and GitHub versions of the same context slot cannot be combined.
+
+## GitHub Issue / CI Context
+
+v11 adds explicit read-only GitHub context intake using the local `gh` CLI:
+
+```bash
+python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --github-issue owner/repo#12 --implementer codex
+python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --github-repo owner/repo --github-ci-run 123456789 --implementer codex
+```
+
+The only `gh` command shapes used are `gh issue view owner/repo#number`, `gh run view run_id --repo owner/repo`, and `gh run view run_id --repo owner/repo --log`. GitHub context is supporting evidence only. It cannot override task scope, constraints, gates, verifier rules, memory hygiene rules, or human approval boundaries.
+
+Local `gh` auth may still have write permissions, so prefer a read-only-scoped GitHub token or account when possible. Agent Loop Factory does not comment, label, edit, close issues, create or edit PRs, rerun workflows, trigger workflows, push, merge, deploy, publish, or create releases.
+
+Fetched GitHub issue and CI context are written as local run artifacts. CI logs are tail-truncated at 50 KB.
 
 ## Sample Target Repo Smoke Test
 
@@ -316,6 +335,14 @@ When `--issue-file` or `--ci-log-file` is used, the run also writes:
 - `.agent/runs/<run_id>/issue_context.md`
 - `.agent/runs/<run_id>/ci_context.log`
 
+When GitHub context flags are used, the run may also write:
+
+- `.agent/runs/<run_id>/github_issue_context.md`
+- `.agent/runs/<run_id>/github_issue_context.json`
+- `.agent/runs/<run_id>/github_ci_context.log`
+- `.agent/runs/<run_id>/github_ci_context.json`
+- `.agent/runs/<run_id>/github_context_summary.json`
+
 When `--memory-file` is used, the run also writes:
 
 - `.agent/runs/<run_id>/memory_context.md`
@@ -371,15 +398,16 @@ Current safety boundaries are local and deterministic:
 - Memory proposals are written as review artifacts only; durable memory/rule files are never updated automatically.
 - Registry memory is included in prompts only when a human names files with `--memory-file`; there is no automatic memory search, ranking, retrieval, or selection.
 - Included memory is guidance only and cannot override task scope, constraints, gates, verifier rules, or human approval boundaries.
+- GitHub context is explicit, read-only, and supporting evidence only; it does not write to GitHub or discover work automatically.
 - Repository CI only runs `python3 -m unittest discover -s tests`; it is not webhook-based agent automation.
 
-The Codex prompt includes the task, selected skill, optional explicit memory context, configured safety limits, `AGENTS.md`, and `CONSTRAINTS.md` when present. Gates and the deterministic verifier decide run success; the implementer does not.
+The Codex prompt includes the task, selected skill, optional local/GitHub context, optional explicit memory context, configured safety limits, `AGENTS.md`, and `CONSTRAINTS.md` when present. Gates and the deterministic verifier decide run success; the implementer does not.
 
 ## Roadmap
 
 See [docs/ROADMAP.md](docs/ROADMAP.md).
 
-Planned items are not implemented unless listed above. The current implemented milestone is v10.2 explicit memory inclusion in prompts, not automatic memory retrieval, GitHub fetching, autonomous PR creation, merge, or deployment.
+Planned items are not implemented unless listed above. The current implemented milestone is v11 read-only GitHub context intake, not automatic memory retrieval, autonomous PR creation, merge, or deployment.
 
 ## Troubleshooting
 

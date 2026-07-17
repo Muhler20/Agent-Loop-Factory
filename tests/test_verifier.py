@@ -121,6 +121,16 @@ class VerifierTests(unittest.TestCase):
                     self.assertEqual(result["reserved_artifacts_touched"], [artifact])
                     self.assertIn(f"reserved run artifact file changed in target repo: {artifact}", result["reasons"])
 
+    def test_fails_when_github_context_artifacts_are_created_in_target_repo(self) -> None:
+        for artifact in ["github_issue_context.md", "github_issue_context.json", "github_ci_context.log", "github_ci_context.json", "github_context_summary.json"]:
+            with self.subTest(artifact=artifact):
+                with repo() as tmp:
+                    (tmp / artifact).write_text("artifact\n")
+                    result = verify(tmp)
+                    self.assertFalse(result["ok"])
+                    self.assertEqual(result["reserved_artifacts_touched"], [artifact])
+                    self.assertIn(f"reserved run artifact file changed in target repo: {artifact}", result["reasons"])
+
     def test_fails_when_memory_proposal_artifacts_are_created_in_target_repo(self) -> None:
         with repo() as tmp:
             (tmp / "memory_proposal.md").write_text("proposal\n")

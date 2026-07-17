@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from agent_loop_factory.orchestrator import run
 from agent_loop_factory.context_intake import load_context
+from agent_loop_factory.github_context import validate_github_flags
 from agent_loop_factory.memory_context import load_memory_context
 from agent_loop_factory.memory_registry import validate_memory_registry
 from agent_loop_factory.skill import load_skill
@@ -27,8 +28,22 @@ def main() -> int:
     parser.add_argument("--skill")
     parser.add_argument("--issue-file", type=Path)
     parser.add_argument("--ci-log-file", type=Path)
+    parser.add_argument("--github-issue")
+    parser.add_argument("--github-repo")
+    parser.add_argument("--github-ci-run")
     parser.add_argument("--memory-file", action="append", type=Path)
     args = parser.parse_args()
+
+    try:
+        validate_github_flags(args.github_issue, args.github_repo, args.github_ci_run)
+        if args.issue_file and args.github_issue:
+            raise ValueError("--issue-file cannot be used with --github-issue")
+        if args.ci_log_file and args.github_ci_run:
+            raise ValueError("--ci-log-file cannot be used with --github-ci-run")
+        if args.check_memory and (args.github_issue or args.github_repo or args.github_ci_run):
+            raise ValueError("--check-memory cannot be combined with GitHub context flags")
+    except ValueError as exc:
+        parser.error(str(exc))
 
     if args.check_memory:
         result = validate_memory_registry(ROOT)
@@ -52,16 +67,22 @@ def main() -> int:
     except ValueError as exc:
         parser.error(str(exc))
 
-    result = run(
-        task_spec.task_body if task_spec else args.task,
-        ROOT,
-        dry_run=args.dry_run,
-        implementer=args.implementer,
-        task_file_path=task_spec.task_file_path if task_spec else None,
-        skill=skill,
-        context=context,
-        memory_context=memory_context,
-    )
+    try:
+        result = run(
+            task_spec.task_body if task_spec else args.task,
+            ROOT,
+            dry_run=args.dry_run,
+            implementer=args.implementer,
+            task_file_path=task_spec.task_file_path if task_spec else None,
+            skill=skill,
+            context=context,
+            memory_context=memory_context,
+            github_issue=args.github_issue,
+            github_repo=args.github_repo,
+            github_ci_run=args.github_ci_run,
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
     print(f"run_id={result['run_id']}")
     print(f"run_dir={result['run_dir']}")
     return 0 if result["ok"] or args.dry_run else 1

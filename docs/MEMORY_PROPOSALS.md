@@ -51,9 +51,13 @@ The loop does not search, rank, retrieve, or auto-select memory. Included memory
 
 Explicit `--memory-file` inclusion still requires human selection. Active memory files with hygiene errors are rejected; warning-only issues do not block inclusion. The loop still does not auto-retrieve, rank, modify, apply, or copy memory.
 
+## v11 GitHub Context
+
+Explicit read-only GitHub issue / CI context can inform a run, but it does not create a memory lesson by itself. `memory_proposal.json` records whether GitHub context, issue context, or CI context was included. Existing deterministic triggers still decide whether any lesson is proposed.
+
 ## Applying Later
 
-A human can apply a proposal by editing an appropriate durable file, such as `memory/`, `CONSTRAINTS.md`, `AGENTS.md`, `skills/<skill>/SKILL.md`, `docs/TASK_SPEC_TEMPLATE.md`, or `docs/LOOP_SELECTION.md`. v10.3 adds memory hygiene checks, but no automatic retrieval flow, scheduler, connector, or LLM verifier.
+A human can apply a proposal by editing an appropriate durable file, such as `memory/`, `CONSTRAINTS.md`, `AGENTS.md`, `skills/<skill>/SKILL.md`, `docs/TASK_SPEC_TEMPLATE.md`, or `docs/LOOP_SELECTION.md`. v11 adds read-only GitHub context intake, but no automatic retrieval flow, scheduler, connector, GitHub writes, or LLM verifier.
 
 ## Risks
 

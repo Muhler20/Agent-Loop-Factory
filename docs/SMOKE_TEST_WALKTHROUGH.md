@@ -1,6 +1,6 @@
 # Smoke Test Walkthrough
 
-This walkthrough documents the proven sample target repo smoke test for Agent Loop Factory v10.2. It uses a tiny local Python repo with one failing unittest, a task spec, optional local context files, optional explicit memory files, a local skill, a named required gate, the Codex implementer, deterministic verifier artifacts, draft PR handoff artifacts, reviewable memory proposal artifacts, and the memory registry check.
+This walkthrough documents the proven sample target repo smoke test for Agent Loop Factory v11. It uses a tiny local Python repo with one failing unittest, a task spec, optional local context files, optional explicit read-only GitHub context, optional explicit memory files, a local skill, a named required gate, the Codex implementer, deterministic verifier artifacts, draft PR handoff artifacts, reviewable memory proposal artifacts, and the memory registry check.
 
 ## Paths
 
@@ -87,6 +87,20 @@ python3 scripts/run_agent_loop.py \
   --skill failing-test-fix \
   --implementer codex
 ```
+
+Optional explicit GitHub context uses the local `gh` CLI as read-only input only:
+
+```bash
+python3 scripts/run_agent_loop.py \
+  --task-file tasks/fix-sample-add.md \
+  --github-issue owner/repo#12 \
+  --github-repo owner/repo \
+  --github-ci-run 123456789 \
+  --skill failing-test-fix \
+  --implementer codex
+```
+
+The offline smoke test does not require this. When used, v11 only calls `gh issue view`, `gh run view`, and `gh run view --log`, writes local GitHub context artifacts, tail-truncates CI logs at 50 KB, and performs no GitHub comments, labels, PR creation, reruns, pushes, merges, or deploys. Prefer read-only-scoped `gh` auth when possible.
 
 Optional explicit approved memory:
 
@@ -237,6 +251,7 @@ In `codex_prompt.md`:
 - the prompt includes the selected skill
 - the prompt includes the local constraints from the sample target repo when present
 - when context files are provided, the prompt includes `Issue Context` and `CI Log Context`
+- when GitHub context is provided, the prompt includes `GitHub Issue Context` and/or `GitHub CI Context`
 - when memory files are provided, the prompt includes `Approved Memory Context`
 - included memory is guidance only and does not override task specs, constraints, gates, verifier rules, or human approval boundaries
 
