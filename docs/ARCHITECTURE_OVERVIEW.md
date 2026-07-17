@@ -73,6 +73,8 @@ The verifier is deterministic. It checks required gate results, changed file cou
 
 Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `memory_proposal.md`, `memory_proposal.json`, `gate_results.json`, `verifier_result.json`, logs, `diff_summary.md`, `task_spec.md`, and `context_summary.json`. `issue_context.md`, `ci_context.log`, `github_issue_context.md`, `github_issue_context.json`, `github_ci_context.log`, `github_ci_context.json`, `github_context_summary.json`, `memory_context.md`, and `memory_context.json` are written only when their matching context flags are provided. Skill and Codex artifacts are written only when those features are used.
 
+See [Artifact Reference](ARTIFACT_REFERENCE.md) for what each artifact means and what warning signs to inspect.
+
 ### Memory Proposals
 
 Memory proposals are deterministic, advisory run artifacts. They may suggest reusable lessons and destinations for human review, but they do not automatically modify `memory/`, `AGENTS.md`, `CONSTRAINTS.md`, skills, docs, task specs, or durable project rule files.
@@ -89,7 +91,7 @@ Memory proposals are deterministic, advisory run artifacts. They may suggest reu
 
 The loop stops after artifacts are written. `review_bundle.md` collects the diff summary, gates, verifier result, task guardrails, and checklist for the human decision. The draft PR handoff files provide a local title, body, suggested manual commands, and local-only handoff validation status. They are review aids only; Agent Loop Factory does not commit, push, open PRs, approve, merge, or deploy.
 
-## Current Implemented System Through v11
+## Current Implemented System Through v11.1
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -100,7 +102,9 @@ The loop stops after artifacts are written. `review_bundle.md` collects the diff
 - v4 task spec guardrails
 - v5 local skills
 - v6 named gates and diff reporting
+- v6.1 docs and roadmap cleanup
 - v7 human review bundle
+- v7.1 review bundle gate-warning polish
 - v8 local draft PR handoff package
 - v8.1 PR handoff validation
 - v9 local issue / CI context intake
@@ -110,6 +114,7 @@ The loop stops after artifacts are written. `review_bundle.md` collects the diff
 - v10.2 explicit memory inclusion in prompts
 - v10.3 memory hygiene checks
 - v11 explicit read-only GitHub issue / CI context intake using `gh`
+- v11.1 operator documentation consolidation
 
 ## Intentionally Not Implemented Yet
 
@@ -135,12 +140,28 @@ The safety model is local, supervised, and deterministic:
 - Memory proposals are advisory and require human approval before any durable rule change.
 - Memory registry entries are human-approved, hygiene-checked, and loaded into prompts only when explicitly named with `--memory-file`.
 
+See [Safety Model](SAFETY_MODEL.md) for the full trust-boundary reference.
+
+## Operator References
+
+- [Operator Guide](OPERATOR_GUIDE.md): safe run preflight, input choices, review order, and cleanup.
+- [Artifact Reference](ARTIFACT_REFERENCE.md): run receipts and warning signs.
+- [Safety Model](SAFETY_MODEL.md): deterministic boundaries and unsafe failure modes.
+- [Version History](VERSION_HISTORY.md): concise milestone history.
+
 ## Future Roadmap
 
-- v12 optional LLM reviewer / PR review integration
-- v13 scheduler / recurring runs
-- v14 multi-agent / parallel execution
-- v15 optional draft PR creation with explicit human command/flag
+- v12 optional advisory reviewer
+- v12.1 reviewer rubric files
+- v13 scheduler / recurring reporting only
+- v13.1 scheduled task queue
+- v14 multi-agent / parallel worktrees
+- v15 explicit draft PR creation
+- v16 explicit GitHub issue update/comment
+- v17 dependency/update loops
+- v18 policy packs / repo profiles
+- v19 controlled memory suggestion/retrieval
+- v20 narrow managed autonomous mode
 
 These are planned milestones, not current capabilities.
 

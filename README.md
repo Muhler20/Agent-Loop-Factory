@@ -16,7 +16,7 @@ Agent Loop Factory is for small, repeatable coding tasks where the target repo h
 
 ## What It Does Today
 
-Implemented through v11:
+Implemented through v11.1:
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -27,7 +27,9 @@ Implemented through v11:
 - v4 task spec guardrails
 - v5 local skills
 - v6 named gates and diff reporting
+- v6.1 docs and roadmap cleanup
 - v7 human review bundle
+- v7.1 review bundle gate-warning polish
 - v8 local draft PR handoff package
 - v8.1 PR handoff validation
 - v9 local issue / CI context intake
@@ -37,6 +39,7 @@ Implemented through v11:
 - v10.2 explicit memory inclusion in prompts
 - v10.3 memory hygiene checks
 - v11 explicit read-only GitHub issue / CI context intake using `gh`
+- v11.1 operator documentation consolidation
 
 Current capabilities:
 
@@ -82,6 +85,13 @@ python3 scripts/run_agent_loop.py --task "test task description" --dry-run
 ```
 
 This creates a run record and planned artifacts without creating a git worktree or executing gates.
+
+## Operator Documentation
+
+- [Operator Guide](docs/OPERATOR_GUIDE.md): safe human operating flow and run patterns.
+- [Artifact Reference](docs/ARTIFACT_REFERENCE.md): every run artifact and what to inspect.
+- [Safety Model](docs/SAFETY_MODEL.md): trust boundaries and failure handling.
+- [Version History](docs/VERSION_HISTORY.md): concise milestone history through v11.1.
 
 ## Common Commands
 
@@ -405,9 +415,9 @@ The Codex prompt includes the task, selected skill, optional local/GitHub contex
 
 ## Roadmap
 
-See [docs/ROADMAP.md](docs/ROADMAP.md).
+See [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/VERSION_HISTORY.md](docs/VERSION_HISTORY.md).
 
-Planned items are not implemented unless listed above. The current implemented milestone is v11 read-only GitHub context intake, not automatic memory retrieval, autonomous PR creation, merge, or deployment.
+Planned items are not implemented unless listed above. The current implemented milestone is v11.1 operator documentation consolidation. GitHub context remains read-only input; the loop does not automatically retrieve memory, write to GitHub, create PRs, merge, or deploy.
 
 ## Troubleshooting
 

@@ -24,6 +24,7 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - v10.2 explicit memory inclusion in prompts
 - v10.3 memory hygiene checks
 - v11 read-only GitHub issue / CI fetch using gh
+- v11.1 operator documentation consolidation
 
 ## Current Capabilities
 
@@ -52,14 +53,21 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 
 ## Next Recommended Milestone
 
-v12 optional LLM reviewer / PR review integration.
+v12 optional advisory reviewer. The reviewer is advisory only and does not replace configured gates, deterministic verifier checks, or human review.
 
 ## Future Milestones
 
-- v12 optional LLM reviewer / PR review integration
-- v13 scheduler / recurring runs
-- v14 multi-agent / parallel execution
-- v15 optional draft PR creation with explicit human command/flag
+- v12 optional advisory reviewer
+- v12.1 reviewer rubric files
+- v13 scheduler / recurring reporting only
+- v13.1 scheduled task queue
+- v14 multi-agent / parallel worktrees
+- v15 explicit draft PR creation
+- v16 explicit GitHub issue update/comment
+- v17 dependency/update loops
+- v18 policy packs / repo profiles
+- v19 controlled memory suggestion/retrieval
+- v20 narrow managed autonomous mode
 
 These are planned milestones except completed items listed above.
 
@@ -78,7 +86,7 @@ Current Agent Loop Factory does not provide:
 - PR creation
 - scheduler support
 - parallel agents
-- LLM reviewer
+- advisory reviewer
 - Docker sandboxing
 - GitHub Actions workflows that run Agent Loop Factory or other automation
 - MCP/connectors
