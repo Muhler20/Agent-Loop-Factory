@@ -7,6 +7,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .advisory_reviewer import run_advisory_reviewer
 from .codex_implementer import run_codex_implementer, write_codex_skip
 from .config import load_config
 from .context_intake import ContextData
@@ -39,6 +40,8 @@ def run(
     github_repo: str | None = None,
     github_ci_run: str | None = None,
     github_runner=None,
+    advisory_reviewer: str | None = None,
+    advisory_runner=None,
 ) -> dict[str, object]:
     validate_github_flags(github_issue, github_repo, github_ci_run)
     repo_root = repo_root.resolve()
@@ -91,10 +94,16 @@ def run(
 
     review_recommendation, _ = recommendation(verifier_result, gates)
     handoff_check = write_pr_handoff_check(run_dir, worktree, gates, verifier_result, review_recommendation)
-    memory_proposal = write_memory_proposal(run_dir, run_id, task_spec, skill, gates, verifier_result, review_recommendation, str(handoff_check["status"]), dry_run, memory_context, github_context)
-    write_review_bundle(run_dir, run_id, task_spec, skill, selected_implementer, worktree, gates, verifier_result, diff_summary, ok, handoff_check["status"], context_summary, memory_proposal, memory_summary, github_summary)
-    write_pr_handoff(run_dir, run_id, task_spec, skill, worktree, gates, verifier_result, review_recommendation, handoff_check["status"], context_summary, memory_proposal, memory_summary, github_summary)
-    report = _report(task_spec, skill, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, verifier_result, diff_summary, ok, review_recommendation, handoff_check["status"], context_summary, memory_proposal, memory_summary, github_summary)
+    advisory_review = None
+    if advisory_reviewer:
+        if advisory_reviewer != "codex":
+            raise ValueError("unsupported advisory reviewer: expected codex")
+        if not dry_run:
+            advisory_review = run_advisory_reviewer(run_dir, task_spec, skill, config, worktree, gates, verifier_result, diff_summary, review_recommendation, handoff_check, context, context_summary, github_context, github_summary, memory_context, runner=advisory_runner or subprocess.run)
+    memory_proposal = write_memory_proposal(run_dir, run_id, task_spec, skill, gates, verifier_result, review_recommendation, str(handoff_check["status"]), dry_run, memory_context, github_context, advisory_review)
+    write_review_bundle(run_dir, run_id, task_spec, skill, selected_implementer, worktree, gates, verifier_result, diff_summary, ok, handoff_check["status"], context_summary, memory_proposal, memory_summary, github_summary, advisory_review)
+    write_pr_handoff(run_dir, run_id, task_spec, skill, worktree, gates, verifier_result, review_recommendation, handoff_check["status"], context_summary, memory_proposal, memory_summary, github_summary, advisory_review)
+    report = _report(task_spec, skill, run_id, dry_run, selected_implementer, codex_result, config, worktree, gates, verifier_result, diff_summary, ok, review_recommendation, handoff_check["status"], context_summary, memory_proposal, memory_summary, github_summary, advisory_review)
     (run_dir / "run_report.md").write_text(report)
     _update_state(agent_dir / "state.json", run_id, ok)
 
@@ -139,7 +148,7 @@ def _write_context_artifacts(run_dir: Path, run_id: str, context: ContextData | 
     return summary
 
 
-def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool, implementer: str, codex_result, config, worktree, gates, verifier_result, diff_summary: str, ok: bool, review_recommendation: str = "Unavailable", handoff_check_status: str = "Unavailable", context_summary: dict[str, object] | None = None, memory_proposal: dict[str, object] | None = None, memory_summary: dict[str, object] | None = None, github_summary: dict[str, object] | None = None) -> str:
+def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool, implementer: str, codex_result, config, worktree, gates, verifier_result, diff_summary: str, ok: bool, review_recommendation: str = "Unavailable", handoff_check_status: str = "Unavailable", context_summary: dict[str, object] | None = None, memory_proposal: dict[str, object] | None = None, memory_summary: dict[str, object] | None = None, github_summary: dict[str, object] | None = None, advisory_review: dict[str, object] | None = None) -> str:
     warnings = [str(gate["warning"]) for gate in gates if gate.get("warning")]
     if not worktree.ok:
         warnings.append(worktree.message)
@@ -169,6 +178,7 @@ def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool
     memory_proposal = memory_proposal or {"proposal_status": "Unavailable", "requires_human_approval": True, "no_files_modified": True}
     memory_context_text = _memory_context_report(run_id, memory_summary)
     github_context_text = _github_context_report(github_summary)
+    advisory_text = _advisory_report(run_id, advisory_review)
     return f"""# Run Report
 
 ## Run
@@ -200,6 +210,8 @@ def _report(task_spec: TaskSpec, skill: Skill | None, run_id: str, dry_run: bool
 {memory_context_text}
 
 {github_context_text}
+
+{advisory_text}
 
 ## Worktree
 
@@ -320,6 +332,24 @@ def _github_context_report(github_summary: dict[str, object] | None) -> str:
 - issue context: {issue}
 - CI context: {ci}
 - summary: github_context_summary.json"""
+
+
+def _advisory_report(run_id: str, advisory_review: dict[str, object] | None) -> str:
+    if not advisory_review:
+        return "## Advisory Review\n\n- included: false"
+    return f"""## Advisory Review
+
+- included: true
+- advisory_only: true
+- does not affect verifier: true
+- reviewer: codex
+- recommendation: {advisory_review.get("recommendation")}
+- markdown: advisory_review.md
+- json: advisory_review.json
+- result: advisory_review_result.json
+- prompt: advisory_review_prompt.md
+- stdout: advisory_review_stdout.log
+- stderr: advisory_review_stderr.log"""
 
 
 def _gate_report(gate: dict[str, object]) -> str:

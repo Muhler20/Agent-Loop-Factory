@@ -18,6 +18,7 @@ Humans approve durable or irreversible actions such as commits, pushes, PRs, mer
 - does not schedule runs
 - does not auto-select memory
 - does not auto-update memory
+- does not let advisory review decide pass/fail
 - does not replace human review
 
 ## Standard Preflight
@@ -47,6 +48,7 @@ Prefer a read-only-scoped GitHub token or account when practical.
 - `--skill`: include one explicit local playbook from `skills/<name>/SKILL.md`.
 - `--memory-file`: include one explicit human-approved memory file from `memory/`; repeat when needed.
 - `--implementer codex`: ask Codex to make one attempt in the worktree.
+- `--advisory-reviewer codex`: ask Codex for an advisory-only second opinion after deterministic facts exist.
 - `--dry-run`: validate the run setup without creating a worktree or running gates.
 - `--check-memory`: validate the memory registry without creating a run or changing progress.
 
@@ -105,6 +107,16 @@ Review-only, no implementer:
 python3 scripts/run_agent_loop.py --task-file tasks/fix-sample-add.md --implementer none
 ```
 
+Optional advisory review:
+
+```bash
+python3 scripts/run_agent_loop.py \
+  --task-file tasks/fix-sample-add.md \
+  --advisory-reviewer codex
+```
+
+The advisory reviewer is a skeptical note-taker. It runs after gates, verifier, review recommendation, and PR handoff validation facts exist. It does not affect `verifier_result.json`, does not replace gates or human review, and must not modify files. Malformed reviewer output is preserved and marked `reviewer_output_unparseable`.
+
 ## Reviewing A Run
 
 Review artifacts in this order:
@@ -116,8 +128,9 @@ Review artifacts in this order:
 5. `review_bundle.md`
 6. `pr_handoff_check.md`
 7. `pr_body.md` / `pr_handoff.md`
-8. `memory_proposal.md`
-9. context artifacts, if present
+8. `advisory_review.md` / `advisory_review.json`, if present
+9. `memory_proposal.md`
+10. context artifacts, if present
 
 ## Deciding What To Do After A Run
 

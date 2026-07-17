@@ -25,6 +25,7 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - v10.3 memory hygiene checks
 - v11 read-only GitHub issue / CI fetch using gh
 - v11.1 operator documentation consolidation
+- v12 optional advisory reviewer
 
 ## Current Capabilities
 
@@ -48,16 +49,17 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - Human-approved memory registry skeleton under `memory/`.
 - Memory registry validation with `--check-memory`, including active memory metadata and section hygiene.
 - Explicit human-selected memory prompt inclusion with `--memory-file`.
+- Optional advisory Codex reviewer with `--advisory-reviewer codex`.
+- Advisory reviewer artifacts are receipts only and do not affect `verifier_result.json`.
 - Run artifacts under `.agent/runs/<run_id>/`.
 - Human review boundary after every run.
 
 ## Next Recommended Milestone
 
-v12 optional advisory reviewer. The reviewer is advisory only and does not replace configured gates, deterministic verifier checks, or human review.
+v12.1 reviewer rubric files. Rubrics should remain explicit inputs and must not turn advisory review into a hard gate.
 
 ## Future Milestones
 
-- v12 optional advisory reviewer
 - v12.1 reviewer rubric files
 - v13 scheduler / recurring reporting only
 - v13.1 scheduled task queue
@@ -86,7 +88,6 @@ Current Agent Loop Factory does not provide:
 - PR creation
 - scheduler support
 - parallel agents
-- advisory reviewer
 - Docker sandboxing
 - GitHub Actions workflows that run Agent Loop Factory or other automation
 - MCP/connectors

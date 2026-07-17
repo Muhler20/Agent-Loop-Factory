@@ -32,6 +32,7 @@ def main() -> int:
     parser.add_argument("--github-repo")
     parser.add_argument("--github-ci-run")
     parser.add_argument("--memory-file", action="append", type=Path)
+    parser.add_argument("--advisory-reviewer", choices=["codex"])
     args = parser.parse_args()
 
     try:
@@ -42,6 +43,8 @@ def main() -> int:
             raise ValueError("--ci-log-file cannot be used with --github-ci-run")
         if args.check_memory and (args.github_issue or args.github_repo or args.github_ci_run):
             raise ValueError("--check-memory cannot be combined with GitHub context flags")
+        if args.check_memory and args.advisory_reviewer:
+            raise ValueError("--check-memory cannot be combined with --advisory-reviewer")
     except ValueError as exc:
         parser.error(str(exc))
 
@@ -80,6 +83,7 @@ def main() -> int:
             github_issue=args.github_issue,
             github_repo=args.github_repo,
             github_ci_run=args.github_ci_run,
+            advisory_reviewer=args.advisory_reviewer,
         )
     except ValueError as exc:
         parser.error(str(exc))

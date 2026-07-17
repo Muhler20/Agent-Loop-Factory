@@ -34,10 +34,11 @@ def write_review_bundle(
     memory_proposal: dict[str, object] | None = None,
     memory_summary: dict[str, object] | None = None,
     github_summary: dict[str, object] | None = None,
+    advisory_review: dict[str, object] | None = None,
 ) -> tuple[str, str]:
     decision, reason = recommendation(verifier_result, gates)
     (run_dir / "review_bundle.md").write_text(
-        build_review_bundle(run_id, task_spec, skill, implementer, worktree, gates, verifier_result, diff_summary, ok, decision, reason, handoff_check_status, context_summary, memory_proposal, memory_summary, github_summary)
+        build_review_bundle(run_id, task_spec, skill, implementer, worktree, gates, verifier_result, diff_summary, ok, decision, reason, handoff_check_status, context_summary, memory_proposal, memory_summary, github_summary, advisory_review)
     )
     return decision, reason
 
@@ -59,6 +60,7 @@ def build_review_bundle(
     memory_proposal: dict[str, object] | None = None,
     memory_summary: dict[str, object] | None = None,
     github_summary: dict[str, object] | None = None,
+    advisory_review: dict[str, object] | None = None,
 ) -> str:
     decision, reason = (decision, reason) if decision and reason else recommendation(verifier_result, gates)
     task_source = "file" if task_spec.task_file_path else "inline"
@@ -69,6 +71,7 @@ def build_review_bundle(
     proposal_status = (memory_proposal or {}).get("proposal_status", "Unavailable")
     memory_context = _memory_context(memory_summary)
     github_context = _github_context(github_summary)
+    advisory_context = _advisory_context(advisory_review)
     return f"""# Human Review Bundle
 
 ## Run Summary
@@ -104,6 +107,8 @@ def build_review_bundle(
 {memory_context}
 
 {github_context}
+
+{advisory_context}
 
 ## Changed Files
 
@@ -236,3 +241,16 @@ def _github_context(github_summary: dict[str, object] | None) -> str:
         lines.append("- See github_ci_context.log / github_ci_context.json.")
     lines.append("- See github_context_summary.json.")
     return "\n".join(lines) + "\n"
+
+
+def _advisory_context(advisory_review: dict[str, object] | None) -> str:
+    if not advisory_review:
+        return ""
+    return f"""## Advisory Review
+
+- Advisory review was run.
+- It is advisory only.
+- It does not affect verifier_result.json.
+- See advisory_review.md and advisory_review.json.
+- Recommendation: {advisory_review.get("recommendation")}
+"""

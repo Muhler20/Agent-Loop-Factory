@@ -150,6 +150,7 @@ class CodexImplementerTests(unittest.TestCase):
             self.assertIn("Do not create `run_report.md`, `gate_results.json`, `verifier_result.json`, `diff_summary.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `memory_proposal.md`, `memory_proposal.json`, `memory_context.md`, `memory_context.json`, `task_spec.md`", prompt)
             self.assertIn("`issue_context.md`, `ci_context.log`, `context_summary.json`", prompt)
             self.assertIn("`github_issue_context.md`, `github_issue_context.json`, `github_ci_context.log`, `github_ci_context.json`, `github_context_summary.json`", prompt)
+            self.assertIn("`advisory_review.md`, `advisory_review.json`, `advisory_review_result.json`, `advisory_review_prompt.md`, `advisory_review_stdout.log`, `advisory_review_stderr.log`", prompt)
             self.assertIn("inside the target repo", prompt)
             self.assertIn("Only change files needed for the task.", prompt)
 

@@ -151,6 +151,23 @@ class VerifierTests(unittest.TestCase):
             self.assertIn("reserved run artifact file changed in target repo: memory_context.md", result["reasons"])
             self.assertIn("reserved run artifact file changed in target repo: memory_context.json", result["reasons"])
 
+    def test_fails_when_advisory_review_artifacts_are_created_in_target_repo(self) -> None:
+        for artifact in [
+            "advisory_review.md",
+            "advisory_review.json",
+            "advisory_review_result.json",
+            "advisory_review_prompt.md",
+            "advisory_review_stdout.log",
+            "advisory_review_stderr.log",
+        ]:
+            with self.subTest(artifact=artifact):
+                with repo() as tmp:
+                    (tmp / artifact).write_text("artifact\n")
+                    result = verify(tmp)
+                    self.assertFalse(result["ok"])
+                    self.assertEqual(result["reserved_artifacts_touched"], [artifact])
+                    self.assertIn(f"reserved run artifact file changed in target repo: {artifact}", result["reasons"])
+
     def test_fails_when_human_required_paths_are_touched(self) -> None:
         with repo() as tmp:
             (tmp / "auth").mkdir()

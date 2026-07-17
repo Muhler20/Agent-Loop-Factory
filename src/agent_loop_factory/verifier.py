@@ -42,6 +42,12 @@ RESERVED_ARTIFACT_FILENAMES = {
     "codex_stdout.log",
     "codex_stderr.log",
     "codex_result.json",
+    "advisory_review.md",
+    "advisory_review.json",
+    "advisory_review_result.json",
+    "advisory_review_prompt.md",
+    "advisory_review_stdout.log",
+    "advisory_review_stderr.log",
 }
 
 

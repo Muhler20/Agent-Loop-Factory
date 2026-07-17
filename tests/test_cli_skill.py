@@ -166,6 +166,64 @@ class CliSkillTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(calls[0][1]["memory_context"].paths, ["memory/INDEX.md"])
 
+    def test_advisory_reviewer_flag_is_passed_to_run(self) -> None:
+        module = load_cli_module()
+        calls = []
+
+        def fake_run(*args, **kwargs):
+            calls.append((args, kwargs))
+            return {"run_id": "test-run", "run_dir": "/tmp/test-run", "ok": False, "dry_run": True}
+
+        old_argv = sys.argv
+        module.run = fake_run
+        sys.argv = ["run_agent_loop.py", "--task", "fix add", "--advisory-reviewer", "codex", "--dry-run"]
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = module.main()
+        finally:
+            sys.argv = old_argv
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][1]["advisory_reviewer"], "codex")
+
+    def test_unsupported_advisory_reviewer_fails_before_run(self) -> None:
+        module = load_cli_module()
+
+        def fake_run(*args, **kwargs):
+            raise AssertionError("run should not be called")
+
+        old_argv = sys.argv
+        module.run = fake_run
+        sys.argv = ["run_agent_loop.py", "--task", "x", "--advisory-reviewer", "other"]
+        stderr = io.StringIO()
+        try:
+            with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit) as exc:
+                module.main()
+        finally:
+            sys.argv = old_argv
+
+        self.assertEqual(exc.exception.code, 2)
+        self.assertIn("invalid choice", stderr.getvalue())
+
+    def test_check_memory_rejects_advisory_reviewer(self) -> None:
+        module = load_cli_module()
+
+        def fake_run(*args, **kwargs):
+            raise AssertionError("run should not be called")
+
+        old_argv = sys.argv
+        module.run = fake_run
+        sys.argv = ["run_agent_loop.py", "--check-memory", "--advisory-reviewer", "codex"]
+        stderr = io.StringIO()
+        try:
+            with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit) as exc:
+                module.main()
+        finally:
+            sys.argv = old_argv
+
+        self.assertEqual(exc.exception.code, 2)
+        self.assertIn("--check-memory cannot be combined with --advisory-reviewer", stderr.getvalue())
+
     def test_failed_memory_validation_does_not_call_run(self) -> None:
         module = load_cli_module()
         state_before = (ROOT / ".agent" / "state.json").read_text()

@@ -131,3 +131,9 @@ Safety boundary preserved: GitHub is input only; no writes.
 Purpose: make operation, artifacts, safety, and history easy to inspect.
 Main artifacts/features: operator guide, artifact reference, safety model, version history.
 Safety boundary preserved: documentation only; no runtime behavior change.
+
+## v12 optional advisory reviewer
+
+Purpose: add an explicit second-opinion reviewer after deterministic facts exist.
+Main artifacts/features: `--advisory-reviewer codex`, advisory prompt/stdout/stderr/result/markdown/JSON artifacts, malformed-output fallback.
+Safety boundary preserved: advisory review is not a gate, does not affect `verifier_result.json`, does not replace gates or human review, treats evidence as untrusted data, and must not modify files or write to GitHub.

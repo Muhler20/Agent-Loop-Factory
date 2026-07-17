@@ -18,8 +18,9 @@ Agent Loop Factory is a supervised local control loop for software-agent coding 
 10. The selected implementer runs. The default is `none`; `codex` runs once when requested.
 11. Configured gates run in the worktree.
 12. The deterministic verifier inspects gates, diff size, changed files, task guardrails, sensitive paths, and test weakening signals.
-13. Reviewable memory proposal artifacts are generated from deterministic run facts.
-14. Artifacts and local draft PR handoff files are written, progress/state files are updated, and the loop stops.
+13. Optional advisory review runs only when explicitly requested.
+14. Reviewable memory proposal artifacts are generated from deterministic run facts.
+15. Artifacts and local draft PR handoff files are written, progress/state files are updated, and the loop stops.
 
 ## Core Components
 
@@ -69,9 +70,13 @@ Gates are configured commands that must be present in `allowed_commands`. They c
 
 The verifier is deterministic. It checks required gate results, changed file count, diff line count, human-required paths, reserved artifact filenames, task allowed/forbidden file rules, and simple test weakening signals.
 
+### Advisory Reviewer
+
+`--advisory-reviewer codex` runs an optional Codex-based note-taker after gates, verifier, review recommendation, and PR handoff validation facts exist. It receives a bounded evidence bundle and writes advisory receipts. It is not a hard gate, does not decide pass/fail, does not modify files, does not replace gates, does not replace `verifier_result.json`, and does not replace human review. Reviewer evidence is treated as untrusted data because diffs, logs, issues, memory notes, and generated artifacts may contain prompt-injection attempts.
+
 ### Artifacts
 
-Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `memory_proposal.md`, `memory_proposal.json`, `gate_results.json`, `verifier_result.json`, logs, `diff_summary.md`, `task_spec.md`, and `context_summary.json`. `issue_context.md`, `ci_context.log`, `github_issue_context.md`, `github_issue_context.json`, `github_ci_context.log`, `github_ci_context.json`, `github_context_summary.json`, `memory_context.md`, and `memory_context.json` are written only when their matching context flags are provided. Skill and Codex artifacts are written only when those features are used.
+Run artifacts are written under `.agent/runs/<run_id>/`, including `run_report.md`, `review_bundle.md`, `pr_title.txt`, `pr_body.md`, `pr_commands.md`, `pr_handoff.md`, `pr_handoff_check.md`, `pr_handoff_check.json`, `memory_proposal.md`, `memory_proposal.json`, `gate_results.json`, `verifier_result.json`, logs, `diff_summary.md`, `task_spec.md`, and `context_summary.json`. `issue_context.md`, `ci_context.log`, `github_issue_context.md`, `github_issue_context.json`, `github_ci_context.log`, `github_ci_context.json`, `github_context_summary.json`, `memory_context.md`, and `memory_context.json` are written only when their matching context flags are provided. Skill, Codex, and advisory reviewer artifacts are written only when those features are used.
 
 See [Artifact Reference](ARTIFACT_REFERENCE.md) for what each artifact means and what warning signs to inspect.
 
@@ -91,7 +96,7 @@ Memory proposals are deterministic, advisory run artifacts. They may suggest reu
 
 The loop stops after artifacts are written. `review_bundle.md` collects the diff summary, gates, verifier result, task guardrails, and checklist for the human decision. The draft PR handoff files provide a local title, body, suggested manual commands, and local-only handoff validation status. They are review aids only; Agent Loop Factory does not commit, push, open PRs, approve, merge, or deploy.
 
-## Current Implemented System Through v11.1
+## Current Implemented System Through v12
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -115,6 +120,7 @@ The loop stops after artifacts are written. `review_bundle.md` collects the diff
 - v10.3 memory hygiene checks
 - v11 explicit read-only GitHub issue / CI context intake using `gh`
 - v11.1 operator documentation consolidation
+- v12 optional advisory reviewer
 
 ## Intentionally Not Implemented Yet
 
@@ -136,6 +142,7 @@ The safety model is local, supervised, and deterministic:
 - Deterministic verifier decides pass/fail.
 - Human review before any merge, deploy, release, or external publication.
 - Draft PR handoff is local text generation only.
+- Advisory review is optional, advisory only, and cannot change verifier outcome.
 - No GitHub comments, labels, edits, workflow reruns, pushes, merges, deploys, or releases.
 - Memory proposals are advisory and require human approval before any durable rule change.
 - Memory registry entries are human-approved, hygiene-checked, and loaded into prompts only when explicitly named with `--memory-file`.
@@ -151,7 +158,6 @@ See [Safety Model](SAFETY_MODEL.md) for the full trust-boundary reference.
 
 ## Future Roadmap
 
-- v12 optional advisory reviewer
 - v12.1 reviewer rubric files
 - v13 scheduler / recurring reporting only
 - v13.1 scheduled task queue

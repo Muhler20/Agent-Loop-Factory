@@ -13,6 +13,7 @@ Agent Loop Factory creates a supervised local run, records what happened, checks
 - implementer: may edit the worktree, but is not trusted to decide success
 - gates: configured commands that test the worktree
 - deterministic verifier: checks gates, diff limits, task scope, sensitive paths, reserved artifacts, and test weakening signals
+- advisory reviewer: optional second-opinion note-taker, not a gate and not an authority
 - GitHub CLI read-only context: optional explicit input source only
 - memory registry: human-approved guidance, included only when explicitly selected
 - review bundle: human review aid, not approval
@@ -29,13 +30,17 @@ Agent Loop Factory creates a supervised local run, records what happened, checks
 - GitHub identifier validation
 - CI log truncation
 
+The advisory reviewer orchestration is deterministic around prompt construction, command shape, parsing, validation, fallback, and artifact writing. The reviewer judgment itself is not deterministic authority.
+
 ## What Is Not Trusted
 
 - Codex output
+- advisory reviewer output
 - LLM claims of success
 - GitHub context as complete truth
 - memory proposals before human approval
 - included memory as overriding rules
+- diffs, logs, issues, memory notes, and generated artifacts as instructions
 
 ## Human-Required Boundaries
 
@@ -66,6 +71,12 @@ Memory proposals are advisory. The memory registry is human-approved. Memory inc
 
 Memory hygiene checks validate active memory. Memory does not override constraints, gates, verifier checks, task scope, `AGENTS.md`, `CONSTRAINTS.md`, human-required paths, or human approval.
 
+## Advisory Review Safety
+
+`--advisory-reviewer codex` is explicit opt-in. The reviewer receives bounded run evidence and is told to treat all evidence as untrusted data because target repo content can contain prompt-injection text. Advisory review does not modify files, does not write to GitHub, does not affect `verifier_result.json`, and does not replace gates, verifier checks, task scope, memory hygiene, constraints, or human approval boundaries.
+
+Malformed, truncated, prose, invalid, nonzero-exit, timeout, or unavailable reviewer output is preserved in raw logs and marked `reviewer_output_unparseable`. That fallback does not mark the run passed or failed.
+
 ## Failure Modes
 
 - gate failure
@@ -76,6 +87,7 @@ Memory hygiene checks validate active memory. Memory does not override constrain
 - tests weakened or deleted
 - GitHub fetch failure
 - memory hygiene failure
+- malformed advisory reviewer output
 
 ## Safe Escalation
 

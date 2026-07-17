@@ -102,6 +102,34 @@ Human-readable handoff validation. Exists every run. Warning signs include verif
 
 Structured handoff validation. Exists every run. Use it for exact fields behind `pr_handoff_check.md`. Watch for non-ok status or warnings.
 
+## Advisory Review Artifacts
+
+These exist only when `--advisory-reviewer codex` is requested. They are receipts, not authority. Advisory review never changes `verifier_result.json`, never replaces gates, never replaces human review, and must not modify files.
+
+### `advisory_review_prompt.md`
+
+Prompt sent to the reviewer. Read it to confirm the evidence bundle was bounded and that untrusted diffs, logs, issues, memory notes, and generated artifacts were framed as data, not instructions.
+
+### `advisory_review_stdout.log`
+
+Raw reviewer stdout. Preserved even when malformed, prose, truncated, or invalid JSON.
+
+### `advisory_review_stderr.log`
+
+Raw reviewer stderr. Read it for missing Codex, nonzero exit, timeout, or tool errors.
+
+### `advisory_review_result.json`
+
+Process receipt with command, return code, timeout flag, artifact paths, parse status, validation status, and advisory-only invariants.
+
+### `advisory_review.md`
+
+Human-readable advisory findings. If reviewer output was malformed, it includes a visible warning and raw stdout.
+
+### `advisory_review.json`
+
+Structured advisory result. `recommendation` may be `no_concerns`, `review_suggested`, `human_attention_required`, or `reviewer_output_unparseable`. It records parse and validation errors without changing verifier status.
+
 ## Context Artifacts
 
 ### `context_summary.json`
@@ -166,4 +194,4 @@ Selected local skill. Exists with `--skill`. Read it to confirm the right playbo
 
 ## Reserved Artifact Rule
 
-Target repositories must not create files with Agent Loop Factory artifact names such as `run_report.md`, `gate_results.json`, `verifier_result.json`, `review_bundle.md`, `pr_body.md`, or `memory_proposal.md`. Those names are reserved for loop receipts. Creating them inside the target repo could spoof or confuse review artifacts, so the verifier treats reserved artifact touches as unsafe.
+Target repositories must not create files with Agent Loop Factory artifact names such as `run_report.md`, `gate_results.json`, `verifier_result.json`, `review_bundle.md`, `pr_body.md`, `memory_proposal.md`, or advisory review receipt names. Those names are reserved for loop receipts. Creating them inside the target repo could spoof or confuse review artifacts, so the verifier treats reserved artifact touches as unsafe.

@@ -22,6 +22,8 @@ class MemoryProposalTests(unittest.TestCase):
         self.assertTrue(proposal["no_files_modified"])
         self.assertFalse(proposal["memory_context_included"])
         self.assertEqual(proposal["memory_files_included"], [])
+        self.assertFalse(proposal["advisory_review_included"])
+        self.assertIsNone(proposal["advisory_review_recommendation"])
 
     def test_records_included_memory_context(self) -> None:
         memory = MemoryContext([MemoryFile("memory/prompt-guidance/small-diffs.md", "Small.\n", 7)], 7)
@@ -30,6 +32,13 @@ class MemoryProposalTests(unittest.TestCase):
 
         self.assertTrue(proposal["memory_context_included"])
         self.assertEqual(proposal["memory_files_included"], ["memory/prompt-guidance/small-diffs.md"])
+
+    def test_records_advisory_review_metadata_without_creating_lessons(self) -> None:
+        proposal = build_memory_proposal("run-1", task(), None, [gate()], verifier(), "ready_for_human_review", "ready", False, advisory_review={"recommendation": "review_suggested"})
+
+        self.assertTrue(proposal["advisory_review_included"])
+        self.assertEqual(proposal["advisory_review_recommendation"], "review_suggested")
+        self.assertEqual(proposal["candidate_lessons"], [])
 
     def test_dry_run_produces_no_proposal(self) -> None:
         proposal = build_memory_proposal("run-1", task(), None, [gate(ok=False)], verifier(ok=False, reasons=["worktree unavailable"]), "reject_or_rework", "needs_attention", True)
