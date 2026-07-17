@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from agent_loop_factory.pr_handoff import pr_title, write_pr_handoff
+from agent_loop_factory.pr_handoff import build_pr_handoff, pr_title, write_pr_handoff
 from agent_loop_factory.skill import Skill
 from agent_loop_factory.task_spec import TaskSpec
 
@@ -114,6 +114,17 @@ class PrHandoffTests(unittest.TestCase):
             self.assertIn("cd Unavailable", commands)
             self.assertIn("git push -u origin Unavailable", commands)
             self.assertIn("adjust these commands manually", commands)
+
+    def test_advisory_rubric_handoff_paths_include_run_dir_separator(self) -> None:
+        handoff = build_pr_handoff(
+            Path(".agent/runs/run-1"),
+            "ready_for_human_review",
+            advisory_review={"reviewer_rubric_included": True},
+        )
+
+        self.assertIn("* advisory_review_rubric.md: .agent/runs/run-1/advisory_review_rubric.md", handoff)
+        self.assertIn("* advisory_review_rubric.json: .agent/runs/run-1/advisory_review_rubric.json", handoff)
+        self.assertNotIn(".agent/runs/run-1advisory_review_rubric.md", handoff)
 
 
 def verifier_result(**overrides):

@@ -324,11 +324,13 @@ def _pr_body_advisory_context(advisory_review: dict[str, object] | None) -> str:
 def _handoff_advisory_context(run_dir: Path, advisory_review: dict[str, object] | None) -> str:
     if not advisory_review:
         return ""
+    rubric_md = run_dir / "advisory_review_rubric.md"
+    rubric_json = run_dir / "advisory_review_rubric.json"
     rubric = ""
     if advisory_review.get("reviewer_rubric_included"):
         rubric = f"""
-* advisory_review_rubric.md: {run_dir / "advisory_review_rubric.md"}
-* advisory_review_rubric.json: {run_dir / "advisory_review_rubric.json"}"""
+* advisory_review_rubric.md: {rubric_md}
+* advisory_review_rubric.json: {rubric_json}"""
     return f"""* advisory_review.md: {run_dir / "advisory_review.md"}
 * advisory_review.json: {run_dir / "advisory_review.json"}
 * advisory_review_result.json: {run_dir / "advisory_review_result.json"}
