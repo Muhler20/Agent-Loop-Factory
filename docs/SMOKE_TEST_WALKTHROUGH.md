@@ -118,7 +118,7 @@ The command prints:
 
 ```text
 run_id=<run_id>
-run_dir=/home/mikestryke/coding-projects/agent-loop-factory/.agent/runs/<run_id>
+run_dir=/path/to/agent-loop-factory/.agent/runs/<run_id>
 ```
 
 ## Inspect Artifacts

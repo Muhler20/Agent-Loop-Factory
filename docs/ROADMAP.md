@@ -27,6 +27,8 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - v11.1 operator documentation consolidation
 - v12 optional advisory reviewer
 - v12.1 reviewer rubric files
+- v13 report definition runner
+- v13.1 external report trigger handoff artifacts
 
 ## Current Capabilities
 
@@ -59,12 +61,13 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 
 ## Next Recommended Milestone
 
-v13.1 scheduled task queue or external trigger integration, if desired later.
+v13.2 optional report queue planning, if ever needed.
 
 ## Future Milestones
 
-- v13 manually invoked recurring report definitions (implemented)
-- v13.1 scheduled task queue or external trigger integration, if desired later
+- v13 report definition runner (implemented)
+- v13.1 external report trigger handoff artifacts (implemented)
+- v13.2 optional report queue planning, if ever needed
 - v14 multi-agent / parallel worktrees
 - v15 explicit draft PR creation
 - v16 explicit GitHub issue update/comment

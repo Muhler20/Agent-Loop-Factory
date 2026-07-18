@@ -4,6 +4,10 @@
 
 `report_configs/*.json` → explicit runner invocation → validated read-only sections → `.agent/reports/<timestamp>-<name>/`. Cadence is descriptive; there is no scheduler. Reports do not create worktrees, mutate code/memory/GitHub, or call the Codex implementer.
 
+## v13.1 external trigger handoff
+
+`report_configs/*.json` → existing validator → explicit target renderer → `.agent/report_handoffs/<timestamp>-<name>-<target>/`. `trigger_hints` are metadata: cron and systemd-user use local time; GitHub Actions uses UTC. The renderer writes instructions only. It does not install or run triggers or reports, modify `.github/workflows/`, write GitHub, call Codex, create worktrees, or mutate memory.
+
 ## Purpose
 
 Agent Loop Factory is a supervised local control loop for software-agent coding runs. Its job is to make one agent attempt auditable: isolate the target repo in a git worktree, run configured gates, verify the diff and scope deterministically, write artifacts, and stop for human review.
@@ -166,8 +170,9 @@ See [Safety Model](SAFETY_MODEL.md) for the full trust-boundary reference.
 ## Future Roadmap
 
 - v12.1 reviewer rubric files
-- v13 scheduler / recurring reporting only
-- v13.1 scheduled task queue
+- v13 report definition runner
+- v13.1 external report trigger handoff artifacts
+- v13.2 optional report queue planning, if ever needed
 - v14 multi-agent / parallel worktrees
 - v15 explicit draft PR creation
 - v16 explicit GitHub issue update/comment

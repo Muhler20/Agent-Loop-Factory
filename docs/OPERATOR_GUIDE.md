@@ -4,6 +4,12 @@
 
 Use `python3 scripts/run_scheduled_reports.py --list-configs`, then `python3 scripts/run_scheduled_reports.py --config report_configs/daily-health.json [--dry-run]`. It runs exactly once and installs no cron, systemd, or GitHub Actions trigger. Review `.agent/reports/`; findings require human judgment.
 
+## Generate external trigger instructions
+
+From `/path/to/agent-loop-factory`, run `python3 scripts/generate_report_trigger_handoff.py --config report_configs/daily-health.json --target cron`. Use `--list-targets` to list targets. `trigger_hints.local_time` drives cron/systemd-user snippets; `trigger_hints.utc_time` drives GitHub Actions snippets. Cadence remains metadata until a human reviews and manually installs a snippet from `.agent/report_handoffs/`.
+
+The generator installs and runs nothing. It does not modify `.github/workflows/`, write GitHub, call Codex, create worktrees, or mutate memory. Disable or uninstall any manually installed trigger using the external platform's normal human-operated process.
+
 ## What Agent Loop Factory Is
 
 Agent Loop Factory is a local supervised control loop for software-agent runs. It is not the target application and it is not autonomous.

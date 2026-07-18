@@ -1,8 +1,10 @@
 # agent-loop-factory
 
-## v13 manually invoked reports
+## v13.1 external report trigger handoffs
 
 Run a definition once with `python3 scripts/run_scheduled_reports.py --config report_configs/daily-health.json`; use `--dry-run` for a receipt or `--list-configs` to list definitions. `report_configs/` is human-authored input and `.agent/reports/` is generated output. Cadence is metadata only: v13 installs no scheduler, cron, systemd, GitHub Actions, daemon, queue, or worker.
+
+Generate copy/paste instructions with `python3 scripts/generate_report_trigger_handoff.py --config report_configs/daily-health.json --target cron`; targets are `manual`, `cron`, `systemd-user`, and `github-actions`. Explicit `trigger_hints` provide local time for cron/systemd or UTC for GitHub Actions. Artifacts under `.agent/report_handoffs/` are handoff-only: nothing is installed, scheduled, or run; `.github/workflows/` and GitHub are not written; Codex, worktrees, and memory are untouched. A human must review and manually install any trigger.
 
 Reports are advisory. They do not create worktrees, change code or memory, call Codex as an implementer, or write to GitHub. A human or external system may invoke the runner and must decide any next action.
 
@@ -453,7 +455,7 @@ The Codex prompt includes the task, selected skill, optional local/GitHub contex
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/VERSION_HISTORY.md](docs/VERSION_HISTORY.md).
 
-Planned items are not implemented unless listed above. The current implemented milestone is v12.1 reviewer rubric files. GitHub context remains read-only input; the loop does not automatically retrieve memory, auto-select rubrics, write to GitHub, create PRs, merge, or deploy.
+Planned items are not implemented unless listed above. The current implemented milestone is v13.1 external report trigger handoff artifacts. GitHub context remains read-only input; the loop does not automatically retrieve memory, auto-select rubrics, write to GitHub, create PRs, merge, or deploy.
 
 ## Troubleshooting
 

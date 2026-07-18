@@ -3,6 +3,7 @@
   "description": "Weekly local maintenance report.",
   "cadence": "weekly",
   "enabled": true,
+  "trigger_hints": {"local_time": "08:00", "utc_time": "13:00", "weekday": "monday"},
   "report_types": ["memory_hygiene", "stale_runs"],
   "stale_runs": {"max_runs": 25},
   "safety": {

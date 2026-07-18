@@ -9,6 +9,14 @@
 
 These artifacts are advisory and grant no authority to modify code, memory, or GitHub.
 
+## `.agent/report_handoffs/<timestamp>-<config-name>-<target>/`
+
+- `trigger_handoff.md/json`: human instructions and safety receipt.
+- `manual_command.txt`: exact one-shot report command.
+- `cron_entry.txt`, `systemd_user_service.txt` plus `systemd_user_timer.txt`, or `github_actions_workflow.yml.txt`: target-specific copy/paste text when an active trigger is valid.
+
+These are not installed. GitHub Actions output deliberately ends in `.yml.txt` and never writes `.github/workflows/`. Cron/systemd timing is local; GitHub Actions timing is UTC. A human must review and install any trigger.
+
 ## Run Directory
 
 Each run writes local receipts under:

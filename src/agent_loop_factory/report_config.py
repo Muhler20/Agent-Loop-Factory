@@ -27,6 +27,9 @@ SECRET_MARKERS = (
     "secret=",
 )
 NAME_RE = re.compile(r"^[a-z0-9_-]+$")
+TIME_RE = re.compile(r"^(?:[01]\d|2[0-3]):[0-5]\d$")
+WEEKDAYS = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
+TRIGGER_HINT_FIELDS = {"local_time", "utc_time", "weekday", "day_of_month"}
 
 
 @dataclass(frozen=True)
@@ -41,6 +44,7 @@ class ReportConfig:
     ci_runs_limit: int
     stale_runs_max: int
     safety: dict[str, bool]
+    trigger_hints: dict[str, str | int]
 
 
 def load_report_config(repo_root: Path, config_path: Path | str) -> ReportConfig:
@@ -120,7 +124,24 @@ def load_report_config(repo_root: Path, config_path: Path | str) -> ReportConfig
         if safety.get(field) is not True:
             raise ValueError(f"safety.{field} must exist and be true")
 
-    return ReportConfig(path, name, description.strip(), cadence, enabled, tuple(report_types), repo, ci_limit, max_runs, {field: True for field in SAFETY_FIELDS})
+    trigger_hints = data.get("trigger_hints", {})
+    if not isinstance(trigger_hints, dict):
+        raise ValueError("trigger_hints must be a JSON object")
+    unknown_hints = set(trigger_hints) - TRIGGER_HINT_FIELDS
+    if unknown_hints:
+        raise ValueError(f"unknown trigger_hints key: {sorted(unknown_hints)[0]}")
+    for field in ("local_time", "utc_time"):
+        value = trigger_hints.get(field)
+        if value is not None and (not isinstance(value, str) or not TIME_RE.fullmatch(value)):
+            raise ValueError(f"trigger_hints.{field} must use HH:MM 24-hour format")
+    weekday = trigger_hints.get("weekday")
+    if weekday is not None and (not isinstance(weekday, str) or weekday not in WEEKDAYS):
+        raise ValueError("trigger_hints.weekday must be a lowercase weekday")
+    day = trigger_hints.get("day_of_month")
+    if day is not None and (isinstance(day, bool) or not isinstance(day, int) or not 1 <= day <= 28):
+        raise ValueError("trigger_hints.day_of_month must be an integer from 1 to 28")
+
+    return ReportConfig(path, name, description.strip(), cadence, enabled, tuple(report_types), repo, ci_limit, max_runs, {field: True for field in SAFETY_FIELDS}, trigger_hints)
 
 
 validate_report_config = load_report_config

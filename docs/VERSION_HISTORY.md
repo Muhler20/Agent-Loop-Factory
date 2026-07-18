@@ -1,5 +1,9 @@
 # Version History
 
+## v13.1 external report trigger handoff artifacts
+
+Added deterministic, manually generated trigger instructions under `.agent/report_handoffs/`. Explicit trigger hints use local time for cron/systemd-user and UTC for GitHub Actions. No trigger is installed, no report is run, and no code, memory, worktree, `.github/workflows/`, Codex, or GitHub write path was added.
+
 ## v13 manually invoked report definitions
 
 Added human-authored JSON definitions and read-only report artifacts. Cadence is metadata only; no scheduler, worktree, Codex implementation, code/memory mutation, or GitHub write behavior was added.

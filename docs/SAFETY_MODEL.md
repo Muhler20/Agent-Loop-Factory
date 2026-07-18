@@ -4,6 +4,10 @@
 
 Definitions must assert report-only, no code changes, no git writes, no GitHub writes, no Codex implementer, and required human action. The runner writes only `.agent/reports/`; it does not create worktrees, mutate memory, schedule itself, or remediate findings.
 
+## v13.1 trigger handoff boundary
+
+The explicit generator writes only `.agent/report_handoffs/`. It validates configs through the v13 validator and renders manual instructions using explicit trigger hints. It never installs cron/systemd, runs reports, changes `.github/workflows/`, writes GitHub, calls Codex, creates worktrees, or mutates memory. Installation is solely a human action.
+
 ## Core Principle
 
 Agents may write code, but the loop controls the process.

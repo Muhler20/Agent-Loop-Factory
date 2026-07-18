@@ -8,3 +8,4 @@ venv/
 .agent/runs/*
 !.agent/runs/.gitkeep
 .agent/reports/
+.agent/report_handoffs/
