@@ -1,5 +1,9 @@
 # Version History
 
+## v13 manually invoked report definitions
+
+Added human-authored JSON definitions and read-only report artifacts. Cadence is metadata only; no scheduler, worktree, Codex implementation, code/memory mutation, or GitHub write behavior was added.
+
 ## v0 deterministic loop skeleton
 
 Purpose: prove a manual local loop can create a run record and stop.

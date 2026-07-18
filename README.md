@@ -1,5 +1,11 @@
 # agent-loop-factory
 
+## v13 manually invoked reports
+
+Run a definition once with `python3 scripts/run_scheduled_reports.py --config report_configs/daily-health.json`; use `--dry-run` for a receipt or `--list-configs` to list definitions. `report_configs/` is human-authored input and `.agent/reports/` is generated output. Cadence is metadata only: v13 installs no scheduler, cron, systemd, GitHub Actions, daemon, queue, or worker.
+
+Reports are advisory. They do not create worktrees, change code or memory, call Codex as an implementer, or write to GitHub. A human or external system may invoke the runner and must decide any next action.
+
 `agent-loop-factory` is a supervised software-agent control loop for local coding-agent runs. It creates an isolated git worktree for a target repository, optionally asks Codex to make one small change, runs configured gates, verifies the resulting diff deterministically, writes audit artifacts, and stops for human review.
 
 It is not an autonomous coding platform. Through v12.1 it is manually triggered and human-in-the-loop. GitHub can be an explicit read-only input source through `gh`, but it is not an output target. The optional advisory reviewer is a second-opinion note-taker only. Reviewer rubrics are explicit advisory guidance only. The loop does not push, merge, deploy, open PRs, comment on issues, label issues, rerun workflows, listen for webhooks, run a scheduler, use Docker sandboxing, run parallel agents, auto-select skills, call an LLM verifier, use MCP/connectors, automatically update durable memory/rule files, or automatically search, rank, retrieve, or select memory.

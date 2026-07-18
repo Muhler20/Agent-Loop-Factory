@@ -1,5 +1,9 @@
 # Operator Guide
 
+## Run a report once
+
+Use `python3 scripts/run_scheduled_reports.py --list-configs`, then `python3 scripts/run_scheduled_reports.py --config report_configs/daily-health.json [--dry-run]`. It runs exactly once and installs no cron, systemd, or GitHub Actions trigger. Review `.agent/reports/`; findings require human judgment.
+
 ## What Agent Loop Factory Is
 
 Agent Loop Factory is a local supervised control loop for software-agent runs. It is not the target application and it is not autonomous.

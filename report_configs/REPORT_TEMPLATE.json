@@ -1,0 +1,15 @@
+{
+  "name": "example-report",
+  "description": "Example manually invoked read-only report.",
+  "cadence": "manual",
+  "enabled": false,
+  "report_types": ["memory_hygiene"],
+  "safety": {
+    "report_only": true,
+    "no_code_changes": true,
+    "no_git_writes": true,
+    "no_github_writes": true,
+    "no_codex_implementer": true,
+    "requires_human_action": true
+  }
+}

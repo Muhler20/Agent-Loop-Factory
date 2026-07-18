@@ -1,0 +1,17 @@
+{
+  "name": "daily-health",
+  "description": "Daily read-only project health report.",
+  "cadence": "daily",
+  "enabled": true,
+  "report_types": ["memory_hygiene", "github_ci", "stale_runs"],
+  "github": {"repo": "Muhler20/Agent-Loop-Factory", "ci_runs_limit": 5},
+  "stale_runs": {"max_runs": 25},
+  "safety": {
+    "report_only": true,
+    "no_code_changes": true,
+    "no_git_writes": true,
+    "no_github_writes": true,
+    "no_codex_implementer": true,
+    "requires_human_action": true
+  }
+}

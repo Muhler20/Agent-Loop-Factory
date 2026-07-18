@@ -59,12 +59,12 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 
 ## Next Recommended Milestone
 
-v13 scheduler / recurring reporting only.
+v13.1 scheduled task queue or external trigger integration, if desired later.
 
 ## Future Milestones
 
-- v13 scheduler / recurring reporting only
-- v13.1 scheduled task queue
+- v13 manually invoked recurring report definitions (implemented)
+- v13.1 scheduled task queue or external trigger integration, if desired later
 - v14 multi-agent / parallel worktrees
 - v15 explicit draft PR creation
 - v16 explicit GitHub issue update/comment

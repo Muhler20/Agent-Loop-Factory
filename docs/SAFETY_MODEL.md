@@ -1,5 +1,9 @@
 # Safety Model
 
+## v13 report boundary
+
+Definitions must assert report-only, no code changes, no git writes, no GitHub writes, no Codex implementer, and required human action. The runner writes only `.agent/reports/`; it does not create worktrees, mutate memory, schedule itself, or remediate findings.
+
 ## Core Principle
 
 Agents may write code, but the loop controls the process.

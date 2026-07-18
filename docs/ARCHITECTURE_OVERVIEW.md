@@ -1,5 +1,9 @@
 # Architecture Overview
 
+## v13 report runner
+
+`report_configs/*.json` → explicit runner invocation → validated read-only sections → `.agent/reports/<timestamp>-<name>/`. Cadence is descriptive; there is no scheduler. Reports do not create worktrees, mutate code/memory/GitHub, or call the Codex implementer.
+
 ## Purpose
 
 Agent Loop Factory is a supervised local control loop for software-agent coding runs. Its job is to make one agent attempt auditable: isolate the target repo in a git worktree, run configured gates, verify the diff and scope deterministically, write artifacts, and stop for human review.

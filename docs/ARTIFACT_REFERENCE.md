@@ -1,5 +1,14 @@
 # Artifact Reference
 
+## `.agent/reports/<timestamp>-<config-name>/`
+
+- `scheduled_report.md/json`: combined report or dry-run/disabled receipt.
+- `memory_hygiene_report.md/json`: read-only memory hygiene.
+- `stale_runs_report.md/json`: bounded local run scan.
+- `github_ci_report.md/json` and bounded stdout/stderr logs: read-only CI listing.
+
+These artifacts are advisory and grant no authority to modify code, memory, or GitHub.
+
 ## Run Directory
 
 Each run writes local receipts under:
