@@ -1,5 +1,14 @@
 # Artifact Reference
 
+## `.agent/plans/<timestamp>-<slug>/`
+
+- `planning_input.md/json`: validated task source and explicitly selected context paths.
+- `triage_prompt.md`, raw logs, and `triage_result.md/json`: advisory triage receipts; omitted in dry-run.
+- `planner_prompt.md`, raw logs, `implementation_plan.md/json`, and `task_spec_draft.md`: advisory planning receipts; omitted in dry-run. The task spec is draft only and requires human review.
+- `planning_handoff.md/json`: always-written summary, artifact index, and planning-only safety flags.
+
+Planning artifacts do not modify code, create worktrees, call the implementer, run gates/verifier, execute reports, write GitHub, or mutate memory. They can only inform a later human-approved `run_agent_loop.py` invocation.
+
 ## `.agent/reports/<timestamp>-<config-name>/`
 
 - `scheduled_report.md/json`: combined report or dry-run/disabled receipt.

@@ -1,5 +1,11 @@
 # agent-loop-factory
 
+## v14 planning-only triage and planner agents
+
+`python3 scripts/run_agent_planning.py --task "Plan how to fix the selected issue." --context-file .agent/reports/<report_id>/scheduled_report.json --triage-agent codex --planner-agent codex` writes reviewable artifacts under `.agent/plans/<plan_id>/`. `--task-file` is also supported; `--dry-run` validates inputs and writes receipts without calling Codex.
+
+This separate pipeline is planning-only. It does not implement code, create worktrees, call the implementer, run gates or verifier, write to GitHub, execute reports, or mutate memory. `task_spec_draft.md` is a draft requiring human review; implementation can happen only through a later explicit `run_agent_loop.py` invocation.
+
 ## v13.1 external report trigger handoffs
 
 Run a definition once with `python3 scripts/run_scheduled_reports.py --config report_configs/daily-health.json`; use `--dry-run` for a receipt or `--list-configs` to list definitions. `report_configs/` is human-authored input and `.agent/reports/` is generated output. Cadence is metadata only: v13 installs no scheduler, cron, systemd, GitHub Actions, daemon, queue, or worker.
@@ -24,7 +30,7 @@ Agent Loop Factory is for small, repeatable coding tasks where the target repo h
 
 ## What It Does Today
 
-Implemented through v12.1:
+Implemented through v14:
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -50,6 +56,9 @@ Implemented through v12.1:
 - v11.1 operator documentation consolidation
 - v12 optional advisory reviewer
 - v12.1 reviewer rubric files
+- v13 manually invoked report definitions
+- v13.1 external report trigger handoffs
+- v14 planning-only triage and planner agents
 
 Current capabilities:
 

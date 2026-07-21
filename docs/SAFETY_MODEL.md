@@ -1,5 +1,11 @@
 # Safety Model
 
+## v14 planning-only boundary
+
+The planning command accepts only explicit, bounded, repository-local task/context inputs and treats their content and all agent output as untrusted evidence. Optional triage and planner calls use `codex exec --sandbox read-only -`; malformed output becomes a conservative review artifact.
+
+Planning has no implementation authority. It creates no worktree, calls no implementer, runs no gates or verifier, executes no report, writes no GitHub state, and does not read, select, propose, accept, or mutate memory. `task_spec_draft.md` is not accepted automatically; a human must review it before any later explicit `run_agent_loop.py` invocation.
+
 ## v13 report boundary
 
 Definitions must assert report-only, no code changes, no git writes, no GitHub writes, no Codex implementer, and required human action. The runner writes only `.agent/reports/`; it does not create worktrees, mutate memory, schedule itself, or remediate findings.
@@ -22,6 +28,7 @@ Agent Loop Factory creates a supervised local run, records what happened, checks
 - gates: configured commands that test the worktree
 - deterministic verifier: checks gates, diff limits, task scope, sensitive paths, reserved artifacts, and test weakening signals
 - advisory reviewer: optional second-opinion note-taker, not a gate and not an authority
+- planning triage/planner: optional sequential advisory agents, not implementers and not approval authorities
 - reviewer rubric: optional human-selected advisory guidance for the advisory reviewer
 - GitHub CLI read-only context: optional explicit input source only
 - memory registry: human-approved guidance, included only when explicitly selected

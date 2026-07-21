@@ -29,6 +29,7 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - v12.1 reviewer rubric files
 - v13 report definition runner
 - v13.1 external report trigger handoff artifacts
+- v14 planning-only triage and planner agents
 
 ## Current Capabilities
 
@@ -58,17 +59,21 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - Reviewer rubrics guide advisory review only; they do not replace gates, `verifier_result.json`, or human review.
 - Run artifacts under `.agent/runs/<run_id>/`.
 - Human review boundary after every run.
+- Separate planning-only triage/planner command with `.agent/plans/` receipts and no implementation authority.
 
 ## Next Recommended Milestone
 
-v13.2 optional report queue planning, if ever needed.
+v14.1 task spec draft validation / promotion handoff.
 
 ## Future Milestones
 
 - v13 report definition runner (implemented)
 - v13.1 external report trigger handoff artifacts (implemented)
-- v13.2 optional report queue planning, if ever needed
-- v14 multi-agent / parallel worktrees
+- v14 planning-only triage and planner agents (implemented)
+- v14.1 task spec draft validation / promotion handoff
+- v14.2 run approved plan through existing single implementer
+- v14.3 multiple advisory reviewers or specialist review aggregation
+- v14.4 parallel worktree planning only
 - v15 explicit draft PR creation
 - v16 explicit GitHub issue update/comment
 - v17 dependency/update loops
@@ -93,6 +98,7 @@ Current Agent Loop Factory does not provide:
 - PR creation
 - scheduler support
 - parallel agents
+- automatic implementation from planning artifacts
 - Docker sandboxing
 - GitHub Actions workflows that run Agent Loop Factory or other automation
 - MCP/connectors

@@ -9,3 +9,4 @@ venv/
 !.agent/runs/.gitkeep
 .agent/reports/
 .agent/report_handoffs/
+.agent/plans/

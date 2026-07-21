@@ -1,5 +1,11 @@
 # Operator Guide
 
+## Create a planning-only handoff
+
+Use `python3 scripts/run_agent_planning.py --task "Plan only. Do not implement." --dry-run` for validation-only receipts, or add `--triage-agent codex --planner-agent codex` for sequential advisory planning. Use `--task-file tasks/example.md` for a file-backed task and repeat `--context-file PATH` only for explicit repository-local evidence.
+
+Review `.agent/plans/<plan_id>/planning_handoff.md`, `triage_result.json`, `implementation_plan.json`, and `task_spec_draft.md`. The draft is not accepted automatically. This command does not implement, create a worktree, call the implementer, run gates/verifier, write GitHub, execute reports, or mutate memory. A human may later use a reviewed task with an explicit `run_agent_loop.py` invocation.
+
 ## Run a report once
 
 Use `python3 scripts/run_scheduled_reports.py --list-configs`, then `python3 scripts/run_scheduled_reports.py --config report_configs/daily-health.json [--dry-run]`. It runs exactly once and installs no cron, systemd, or GitHub Actions trigger. Review `.agent/reports/`; findings require human judgment.

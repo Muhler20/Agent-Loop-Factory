@@ -1,5 +1,9 @@
 # Version History
 
+## v14 planning-only triage and planner agents
+
+Added a separate command for bounded, sequential advisory triage and planning with reviewable `.agent/plans/` artifacts. It does not implement code, create worktrees, call the implementer, run gates/verifier, execute reports, write GitHub, or mutate memory. Generated task specs remain drafts until human review and a later explicit `run_agent_loop.py` invocation.
+
 ## v13.1 external report trigger handoff artifacts
 
 Added deterministic, manually generated trigger instructions under `.agent/report_handoffs/`. Explicit trigger hints use local time for cron/systemd-user and UTC for GitHub Actions. No trigger is installed, no report is run, and no code, memory, worktree, `.github/workflows/`, Codex, or GitHub write path was added.
