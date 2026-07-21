@@ -6,6 +6,8 @@ Explicit `--task` or repository-local `--task-file`, plus optional repeatable re
 
 This is a separate planning-only command. It creates no worktree, calls no implementer, runs no gates or verifier, executes no report, changes no target repo or memory file, and writes nothing to GitHub. `task_spec_draft.md` has no authority until a human reviews it and explicitly invokes `run_agent_loop.py` later.
 
+v14.1 adds a pure Python safety-core detector over task text, explicit context paths/content, and selected planner fields. Safety-core files form the control-loop trust boundary. Matches add artifact warnings and require extra human review, without blocking or approving planning. A warning does not prove danger, and no warning does not prove safety. Dogfood docs, tests, and low-risk helpers first; changing the safety layer is restricted higher-risk dogfooding. Plan promotion and approved implementation remain future work.
+
 ## v13 report runner
 
 `report_configs/*.json` → explicit runner invocation → validated read-only sections → `.agent/reports/<timestamp>-<name>/`. Cadence is descriptive; there is no scheduler. Reports do not create worktrees, mutate code/memory/GitHub, or call the Codex implementer.
@@ -112,7 +114,7 @@ Memory proposals are deterministic, advisory run artifacts. They may suggest reu
 
 The loop stops after artifacts are written. `review_bundle.md` collects the diff summary, gates, verifier result, task guardrails, and checklist for the human decision. The draft PR handoff files provide a local title, body, suggested manual commands, and local-only handoff validation status. They are review aids only; Agent Loop Factory does not commit, push, open PRs, approve, merge, or deploy.
 
-## Current Implemented System Through v14
+## Current Implemented System Through v14.1
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -141,6 +143,7 @@ The loop stops after artifacts are written. `review_bundle.md` collects the diff
 - v13 manually invoked report definitions
 - v13.1 external report trigger handoffs
 - v14 planning-only triage and planner agents
+- v14.1 safety-core protection policy
 
 ## Intentionally Not Implemented Yet
 
@@ -183,10 +186,10 @@ See [Safety Model](SAFETY_MODEL.md) for the full trust-boundary reference.
 - v13.1 external report trigger handoff artifacts
 - v13.2 optional report queue planning, if ever needed
 - v14 planning-only triage and planner agents
-- v14.1 task spec draft validation / promotion handoff
-- v14.2 run approved plan through existing single implementer
-- v14.3 multiple advisory reviewers or specialist review aggregation
-- v14.4 parallel worktree planning only
+- v14.1 safety-core protection policy (implemented)
+- v14.2 task spec draft validation / promotion handoff
+- v14.3 approved plan through existing single implementer
+- v14.4 multi-reviewer advisory aggregation
 - v15 explicit draft PR creation
 - v16 explicit GitHub issue update/comment
 - v17 dependency/update loops

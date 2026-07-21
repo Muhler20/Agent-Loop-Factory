@@ -6,6 +6,8 @@ Use `python3 scripts/run_agent_planning.py --task "Plan only. Do not implement."
 
 Review `.agent/plans/<plan_id>/planning_handoff.md`, `triage_result.json`, `implementation_plan.json`, and `task_spec_draft.md`. The draft is not accepted automatically. This command does not implement, create a worktree, call the implementer, run gates/verifier, write GitHub, execute reports, or mutate memory. A human may later use a reviewed task with an explicit `run_agent_loop.py` invocation.
 
+For v14.1, inspect the `Safety-core review` section and JSON safety-core fields. A match marks control-loop trust-boundary work as higher risk and requires extra human review; it is not proof the change is unsafe, while no match is not proof of safety. Prefer initial dogfooding on docs, tests, and low-risk helpers. Safety-layer dogfooding is restricted higher-risk work. Planning still neither promotes a draft nor runs an approved plan.
+
 ## Run a report once
 
 Use `python3 scripts/run_scheduled_reports.py --list-configs`, then `python3 scripts/run_scheduled_reports.py --config report_configs/daily-health.json [--dry-run]`. It runs exactly once and installs no cron, systemd, or GitHub Actions trigger. Review `.agent/reports/`; findings require human judgment.

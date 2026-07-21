@@ -1,5 +1,9 @@
 # Version History
 
+## v14.1 safety-core protection policy
+
+Added deterministic warnings and planning artifact fields for explicit references to control-loop trust-boundary files. Safety-core work requires extra human review but is neither blocked nor approved. The detector scans no repository state and adds no implementation, worktree, gate, verifier, GitHub, memory, scheduler, queue, or worker behavior. Plan promotion and approved-plan execution remain future milestones.
+
 ## v14 planning-only triage and planner agents
 
 Added a separate command for bounded, sequential advisory triage and planning with reviewable `.agent/plans/` artifacts. It does not implement code, create worktrees, call the implementer, run gates/verifier, execute reports, write GitHub, or mutate memory. Generated task specs remain drafts until human review and a later explicit `run_agent_loop.py` invocation.

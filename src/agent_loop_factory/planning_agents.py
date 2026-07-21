@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Sequence
 
+from .safety_core import find_safety_core_references
+
 
 Runner = Callable[..., subprocess.CompletedProcess[str]]
 Clock = Callable[[], datetime]
@@ -97,6 +99,7 @@ def run_planning(
     plan_id = create_plan_id(planning_input.task, clock())
     plan_dir = repo_root.resolve() / ".agent" / "plans" / plan_id
     plan_dir.mkdir(parents=True, exist_ok=False)
+    safety = _planning_safety(planning_input)
     input_json = {
         "plan_id": plan_id,
         "task": planning_input.task,
@@ -104,6 +107,9 @@ def run_planning(
         "context_files": [path for path, _ in planning_input.contexts],
         "dry_run": dry_run,
         "planning_only": True,
+        "safety_core_references_detected": safety["references_detected"],
+        "safety_core_matches": list(safety["matches"]),
+        "safety_core_requires_extra_review": safety["references_detected"],
     }
     _write_json(plan_dir / "planning_input.json", input_json)
     (plan_dir / "planning_input.md").write_text(_input_markdown(planning_input), encoding="utf-8")
@@ -111,7 +117,7 @@ def run_planning(
     triage: dict[str, object] | None = None
     planner: dict[str, object] | None = None
     if triage_agent and not dry_run:
-        triage_prompt = build_triage_prompt(planning_input)
+        triage_prompt = build_triage_prompt(planning_input, safety)
         (plan_dir / "triage_prompt.md").write_text(triage_prompt, encoding="utf-8")
         stdout, stderr, return_code = _run_codex(plan_dir, triage_prompt, runner)
         (plan_dir / "triage_stdout.log").write_text(stdout, encoding="utf-8")
@@ -120,17 +126,18 @@ def run_planning(
         _write_json(plan_dir / "triage_result.json", triage)
         (plan_dir / "triage_result.md").write_text(_triage_markdown(triage), encoding="utf-8")
 
-        planner_prompt = build_planner_prompt(planning_input, triage)
+        planner_prompt = build_planner_prompt(planning_input, triage, safety)
         (plan_dir / "planner_prompt.md").write_text(planner_prompt, encoding="utf-8")
         stdout, stderr, return_code = _run_codex(plan_dir, planner_prompt, runner)
         (plan_dir / "planner_stdout.log").write_text(stdout, encoding="utf-8")
         (plan_dir / "planner_stderr.log").write_text(stderr, encoding="utf-8")
         planner = _parse_planner(stdout, return_code)
+        safety = _planning_safety(planning_input, planner)
         _write_json(plan_dir / "implementation_plan.json", planner)
         (plan_dir / "implementation_plan.md").write_text(_plan_markdown(planner), encoding="utf-8")
-        (plan_dir / "task_spec_draft.md").write_text(_task_spec_draft(planner), encoding="utf-8")
+        (plan_dir / "task_spec_draft.md").write_text(_task_spec_draft(planner, safety), encoding="utf-8")
 
-    handoff = _handoff(plan_id, planning_input, dry_run, triage_agent, planner_agent, triage, planner, plan_dir)
+    handoff = _handoff(plan_id, planning_input, dry_run, triage_agent, planner_agent, triage, planner, plan_dir, safety)
     _write_json(plan_dir / "planning_handoff.json", handoff)
     (plan_dir / "planning_handoff.md").write_text(_handoff_markdown(planning_input, handoff, triage, planner), encoding="utf-8")
     handoff["plan_dir"] = str(plan_dir)
@@ -145,9 +152,11 @@ def create_plan_id(task: str, now: datetime) -> str:
     return f"{timestamp}-{slug}"
 
 
-def build_triage_prompt(data: PlanningInput) -> str:
+def build_triage_prompt(data: PlanningInput, safety: dict[str, object] | None = None) -> str:
+    safety = safety or _planning_safety(data)
     return _prompt_header("Triage") + f"""
 Assess whether a human should commission an implementation plan. You cannot approve implementation or launch another agent.
+{_safety_prompt_notice(safety)}
 Return JSON only on stdout with exactly this shape and bounded strings/lists:
 {json.dumps(_triage_example(), indent=2)}
 Allowed recommendation: plan_needed, needs_more_context, do_not_plan, human_attention_required.
@@ -158,9 +167,11 @@ Allowed priority/risk: low, medium, high.
 """
 
 
-def build_planner_prompt(data: PlanningInput, triage: dict[str, object]) -> str:
+def build_planner_prompt(data: PlanningInput, triage: dict[str, object], safety: dict[str, object] | None = None) -> str:
+    safety = safety or _planning_safety(data)
     return _prompt_header("Planner") + f"""
 Create a reviewable implementation plan only. Do not launch the implementer. Do not run commands or decide success.
+{_safety_prompt_notice(safety)}
 The eventual task_spec_draft is draft only, not automatically accepted, and requires human review before run_agent_loop.py.
 Return JSON only on stdout with exactly this shape and bounded strings/lists:
 {json.dumps(_planner_example(), indent=2)}
@@ -264,6 +275,19 @@ def _evidence(data: PlanningInput) -> dict[str, object]:
     return {"task": data.task, "task_source": data.task_source, "context_files": [{"path": path, "contents": contents} for path, contents in data.contexts]}
 
 
+def _planning_safety(data: PlanningInput, planner: dict[str, object] | None = None) -> dict[str, object]:
+    text = "\n".join([data.task, *(contents for _, contents in data.contexts)])
+    if planner:
+        text += "\n" + json.dumps({field: planner.get(field, []) for field in ("allowed_files", "forbidden_files", "scope", "implementation_steps")})
+    return find_safety_core_references(text, [path for path, _ in data.contexts])
+
+
+def _safety_prompt_notice(safety: dict[str, object]) -> str:
+    return f"""Safety-core detected: {str(safety['references_detected']).lower()}. Matches: {json.dumps(list(safety['matches']))}.
+Safety-core files are higher-risk. You may not downplay or remove this risk; safety-core work requires explicit human review.
+Python enforces artifact warnings; do not attempt to enforce or override this policy."""
+
+
 def _write_json(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
 
@@ -282,17 +306,20 @@ def _plan_markdown(data: dict[str, object]) -> str:
     return f"# Implementation Plan\n\n## Status\n\nPlanning only. Ready for human review: {str(data['ready_for_human_review']).lower()}\n\n## Summary\n\n{data['summary']}\n\n## Goal\n\n{data['goal']}\n\n## Steps\n\n{steps}\n\n## Stop condition\n\n{data['stop_condition']}\n"
 
 
-def _task_spec_draft(data: dict[str, object]) -> str:
-    return f"# Task Spec Draft\n\n> Draft only. Not automatically accepted. Human must review before using it with run_agent_loop.py.\n\n## Goal\n\n{data['goal']}\n\n## Allowed files\n\n" + ("\n".join(f"- {x}" for x in data.get("allowed_files", [])) or "- To be reviewed.") + "\n\n## Forbidden files\n\n" + ("\n".join(f"- {x}" for x in data.get("forbidden_files", [])) or "- To be reviewed.") + "\n"
+def _task_spec_draft(data: dict[str, object], safety: dict[str, object]) -> str:
+    warning = "> Safety-core warning: this draft references control-loop safety files and requires extra human review before any implementation run.\n\n" if safety["references_detected"] else ""
+    return f"# Task Spec Draft\n\n{warning}> Draft only. Not automatically accepted. Human must review before using it with run_agent_loop.py.\n\n## Goal\n\n{data['goal']}\n\n## Allowed files\n\n" + ("\n".join(f"- {x}" for x in data.get("allowed_files", [])) or "- To be reviewed.") + "\n\n## Forbidden files\n\n" + ("\n".join(f"- {x}" for x in data.get("forbidden_files", [])) or "- To be reviewed.") + "\n"
 
 
-def _handoff(plan_id: str, data: PlanningInput, dry_run: bool, triage_agent: str | None, planner_agent: str | None, triage: dict[str, object] | None, planner: dict[str, object] | None, plan_dir: Path) -> dict[str, object]:
+def _handoff(plan_id: str, data: PlanningInput, dry_run: bool, triage_agent: str | None, planner_agent: str | None, triage: dict[str, object] | None, planner: dict[str, object] | None, plan_dir: Path, safety: dict[str, object]) -> dict[str, object]:
     artifacts = sorted(path.name for path in plan_dir.iterdir()) + ["planning_handoff.md", "planning_handoff.json"]
-    return {"plan_id": plan_id, "task_source": data.task_source, "context_files": [path for path, _ in data.contexts], "dry_run": dry_run, "agent_calls_skipped": dry_run or not triage_agent, "triage_agent": triage_agent, "planner_agent": planner_agent, "planning_only": True, "no_code_changes": True, "no_worktrees": True, "no_git_writes": True, "no_github_writes": True, "no_codex_implementer": True, "no_memory_mutation": True, "no_report_execution": True, "requires_human_approval": True, "triage_recommendation": triage.get("recommendation") if triage else None, "planner_ready_for_human_review": planner.get("ready_for_human_review") if planner else False, "artifacts": sorted(set(artifacts))}
+    return {"plan_id": plan_id, "task_source": data.task_source, "context_files": [path for path, _ in data.contexts], "dry_run": dry_run, "agent_calls_skipped": dry_run or not triage_agent, "triage_agent": triage_agent, "planner_agent": planner_agent, "planning_only": True, "no_code_changes": True, "no_worktrees": True, "no_git_writes": True, "no_github_writes": True, "no_codex_implementer": True, "no_memory_mutation": True, "no_report_execution": True, "requires_human_approval": True, "safety_core_references_detected": safety["references_detected"], "safety_core_matches": list(safety["matches"]), "safety_core_requires_extra_review": safety["references_detected"], "safety_core_notice": "Higher-risk safety-core task; extra human review is required before implementation." if safety["references_detected"] else "No safety-core references detected; this does not prove the task is safe.", "triage_recommendation": triage.get("recommendation") if triage else None, "planner_ready_for_human_review": planner.get("ready_for_human_review") if planner else False, "artifacts": sorted(set(artifacts))}
 
 
 def _handoff_markdown(data: PlanningInput, handoff: dict[str, object], triage: dict[str, object] | None, planner: dict[str, object] | None) -> str:
     artifacts = "\n".join(f"* `{name}`" for name in handoff["artifacts"])
+    matches = "\n".join(f"* `{match}`" for match in handoff["safety_core_matches"]) or "* None detected. Absence of a warning does not prove this task is safe."
+    warning = "\n\nSafety-core references make this a higher-risk task. Extra review is required before implementation. Passing planning does not mean the task is safe to implement." if handoff["safety_core_requires_extra_review"] else ""
     return f"""# Planning Handoff: {handoff['plan_id']}
 
 ## Status
@@ -310,6 +337,12 @@ Task source: {data.task_source}. Explicit context files: {len(data.contexts)}.
 ## Planner summary
 
 {planner.get('summary') if planner else 'Agent call skipped.'}
+
+## Safety-core review
+
+{matches}
+
+{handoff['safety_core_notice']}{warning}
 
 ## Artifacts
 

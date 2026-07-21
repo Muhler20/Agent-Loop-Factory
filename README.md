@@ -1,10 +1,12 @@
 # agent-loop-factory
 
-## v14 planning-only triage and planner agents
+## v14.1 safety-core protection policy
 
 `python3 scripts/run_agent_planning.py --task "Plan how to fix the selected issue." --context-file .agent/reports/<report_id>/scheduled_report.json --triage-agent codex --planner-agent codex` writes reviewable artifacts under `.agent/plans/<plan_id>/`. `--task-file` is also supported; `--dry-run` validates inputs and writes receipts without calling Codex.
 
 This separate pipeline is planning-only. It does not implement code, create worktrees, call the implementer, run gates or verifier, write to GitHub, execute reports, or mutate memory. `task_spec_draft.md` is a draft requiring human review; implementation can happen only through a later explicit `run_agent_loop.py` invocation.
+
+Planning now warns when task text, explicit context, or planner fields reference safety-core files at the control-loop trust boundary. These warnings identify higher-risk work requiring extra human review; they neither prove a change unsafe nor make an unflagged change safe. Dogfood on docs, tests, and low-risk helpers first; safety-layer dogfooding is a restricted higher-risk mode. Plan promotion and approved-plan implementation remain future milestones.
 
 ## v13.1 external report trigger handoffs
 
@@ -30,7 +32,7 @@ Agent Loop Factory is for small, repeatable coding tasks where the target repo h
 
 ## What It Does Today
 
-Implemented through v14:
+Implemented through v14.1:
 
 - v0 deterministic loop skeleton
 - v0.5 sample target repo smoke test
@@ -59,6 +61,7 @@ Implemented through v14:
 - v13 manually invoked report definitions
 - v13.1 external report trigger handoffs
 - v14 planning-only triage and planner agents
+- v14.1 safety-core protection policy
 
 Current capabilities:
 
@@ -464,7 +467,7 @@ The Codex prompt includes the task, selected skill, optional local/GitHub contex
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/VERSION_HISTORY.md](docs/VERSION_HISTORY.md).
 
-Planned items are not implemented unless listed above. The current implemented milestone is v13.1 external report trigger handoff artifacts. GitHub context remains read-only input; the loop does not automatically retrieve memory, auto-select rubrics, write to GitHub, create PRs, merge, or deploy.
+Planned items are not implemented unless listed above. The current implemented milestone is v14.1 safety-core protection policy. GitHub context remains read-only input; the loop does not automatically retrieve memory, auto-select rubrics, write to GitHub, create PRs, merge, or deploy.
 
 ## Troubleshooting
 

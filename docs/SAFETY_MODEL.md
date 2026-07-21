@@ -6,6 +6,10 @@ The planning command accepts only explicit, bounded, repository-local task/conte
 
 Planning has no implementation authority. It creates no worktree, calls no implementer, runs no gates or verifier, executes no report, writes no GitHub state, and does not read, select, propose, accept, or mutate memory. `task_spec_draft.md` is not accepted automatically; a human must review it before any later explicit `run_agent_loop.py` invocation.
 
+## v14.1 safety-core boundary
+
+Safety-core files are the control-loop trust boundary. A deterministic detector checks only supplied task text, explicit context paths/content, and selected planner fields, then adds visible warnings for matches. It does not scan the repository, block planning, reject work, or approve safety. Matches require extra human review; warnings do not prove danger and their absence does not prove safety. Dogfood docs, tests, and low-risk helpers first. Safety-layer dogfooding is restricted higher-risk work. Plan promotion and approved implementation are future milestones.
+
 ## v13 report boundary
 
 Definitions must assert report-only, no code changes, no git writes, no GitHub writes, no Codex implementer, and required human action. The runner writes only `.agent/reports/`; it does not create worktrees, mutate memory, schedule itself, or remediate findings.

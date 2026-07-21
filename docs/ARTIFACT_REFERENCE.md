@@ -2,12 +2,14 @@
 
 ## `.agent/plans/<timestamp>-<slug>/`
 
-- `planning_input.md/json`: validated task source and explicitly selected context paths.
+- `planning_input.md/json`: validated task source, explicitly selected context paths, and initial safety-core fields.
 - `triage_prompt.md`, raw logs, and `triage_result.md/json`: advisory triage receipts; omitted in dry-run.
 - `planner_prompt.md`, raw logs, `implementation_plan.md/json`, and `task_spec_draft.md`: advisory planning receipts; omitted in dry-run. The task spec is draft only and requires human review.
-- `planning_handoff.md/json`: always-written summary, artifact index, and planning-only safety flags.
+- `planning_handoff.md/json`: always-written summary, artifact index, planning-only safety flags, and final safety-core matches/notice. The Markdown always has a `Safety-core review` section.
 
 Planning artifacts do not modify code, create worktrees, call the implementer, run gates/verifier, execute reports, write GitHub, or mutate memory. They can only inform a later human-approved `run_agent_loop.py` invocation.
+
+Safety-core warnings identify higher-risk control-loop trust-boundary work requiring extra human review. They do not prove a change unsafe; absence does not prove safety. Prefer dogfooding docs, tests, and low-risk helpers. Safety-layer dogfooding is restricted, and plan promotion/approved implementation are not yet available.
 
 ## `.agent/reports/<timestamp>-<config-name>/`
 

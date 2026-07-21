@@ -30,6 +30,7 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 - v13 report definition runner
 - v13.1 external report trigger handoff artifacts
 - v14 planning-only triage and planner agents
+- v14.1 safety-core protection policy
 
 ## Current Capabilities
 
@@ -63,17 +64,17 @@ This roadmap distinguishes implemented capabilities from planned work. Planned m
 
 ## Next Recommended Milestone
 
-v14.1 task spec draft validation / promotion handoff.
+v14.2 task spec draft validation / promotion handoff.
 
 ## Future Milestones
 
 - v13 report definition runner (implemented)
 - v13.1 external report trigger handoff artifacts (implemented)
 - v14 planning-only triage and planner agents (implemented)
-- v14.1 task spec draft validation / promotion handoff
-- v14.2 run approved plan through existing single implementer
-- v14.3 multiple advisory reviewers or specialist review aggregation
-- v14.4 parallel worktree planning only
+- v14.1 safety-core protection policy (implemented)
+- v14.2 task spec draft validation / promotion handoff
+- v14.3 approved plan through existing single implementer
+- v14.4 multi-reviewer advisory aggregation
 - v15 explicit draft PR creation
 - v16 explicit GitHub issue update/comment
 - v17 dependency/update loops
